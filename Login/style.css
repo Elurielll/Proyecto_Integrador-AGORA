@@ -1,0 +1,215 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+* {
+    font-family: "Inter", sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg-color: #D3D1DF;
+    --bg-form-color: #FFFFFF;
+    --bg-banner-color: #F4F5F9;
+    --border-input-color: #CBCBCB;
+    --primary-color: #0b317e;
+}
+
+/* cuerpo */
+body {
+    width: 100%;
+    height: 100vh;
+    background-color: rgb(53, 86, 138);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* contenedores */
+.container {
+    width: 64rem;
+    height: 40rem;
+    border-radius: 0.3rem;
+    background-color: var(--bg-form-color);
+    display: flex;
+    justify-content: space-between;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+
+/* forma de los contenedores */
+.form-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 1.2rem;
+    justify-content: space-between;
+}
+
+/* Form Top (Equipo 6) */
+.form-container .form-top {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-left: 1.5rem;
+    position: relative;
+}
+
+.form-container .form-top span::before {
+    content: '';
+    position: absolute;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background-color: black;
+    top: 50%;
+    left: -1rem;
+    transform: translateY(-50%);
+}
+
+/* froma boton */
+.form-container .form-bot {
+    font-size: 0.6rem;
+    font-weight: 600;
+    opacity: 0.4;
+    text-align: left;
+    padding-left: 0.5rem;
+}
+
+/* Form Area */
+.form {
+    height: 80%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Animación del login y register */
+.login, .register {
+    width: 55%;
+    position: absolute;
+    transition: transform 0.8s, opacity 0.8s;
+}
+
+.login {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.form.toggle .login {
+    transform: translateY(-150%);
+    opacity: 0;
+}
+
+.register {
+    transform: translateY(150%);
+    opacity: 0;
+}
+
+.form.toggle .register {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+/* Estilos de Texto */
+.form h2 { font-weight: 600; font-size: 1.5rem; margin-bottom: 0.8rem; }
+.form p { font-size: 0.8rem; margin-bottom: 1.8rem; }
+
+/* Inputs */
+.form .input { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.9rem; width: 100%; }
+.form .input label { font-size: 0.7rem; font-weight: 600; }
+.form .input input {
+    font-size: 0.7rem;
+    outline: none;
+    border: 1px solid var(--primary-color);
+    border-radius: 0.2rem;
+    padding: 0.5rem;
+}
+
+/* Reminder & Forgot */
+.form .reminder { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; width: 100%; }
+.form .checkbox-container { font-size: 0.7rem; font-weight: 600; display: flex; align-items: center; gap: 0.2rem; }
+.form .forgot { font-size: 0.7rem; font-weight: 600; color: var(--primary-color); cursor: pointer; }
+
+/* botones */
+.form .buttons { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1rem; width: 100%; }
+.form .buttons button {
+    width: 100%;
+    padding: 0.7rem;
+    font-size: 0.8rem;
+    border-radius: 0.5rem;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.form .buttons .icon-google { width: 1rem; }
+.form .buttons button:first-child { background-color: var(--primary-color); color: white; }
+.form .buttons button:last-child { 
+    background-color: var(--bg-form-color); 
+    border: 2px solid var(--border-input-color); 
+}
+
+.form .account { text-align: center; font-size: 0.75rem; }
+.form .account a { color: var(--primary-color); font-weight: bold; text-decoration: none; }
+
+/* Banner Side */
+.banner {
+    background-color: var(--bg-banner-color);
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.circle {
+    background-image: url('./icons/AgoraICON.jpeg'); 
+    background-size: cover;
+    background-position: center;
+    width: 18rem;
+    height: 18rem;
+    border-radius: 50%;
+    z-index: 1;
+    animation: circleEntrance 1.2s ease-out forwards;
+}
+
+.circle-2 {
+    width: 16rem;
+    height: 16rem;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    position: absolute;
+    z-index: 2;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    clip-path: inset(50% 0 0 0);
+    transition: clip-path 0.8s ease-in-out;
+}
+
+.banner.toggle .circle-2 {
+    clip-path: inset(0 0 50% 0);
+}
+
+@keyframes circleEntrance {
+    from { opacity: 0; transform: scale(0.8) translateY(20px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Responsive */
+@media(max-width:1088px) {
+    .container { flex-direction: column; height: auto; width: 90%; }
+    .container .form-container { order: 2; padding: 2rem 1.2rem; }
+    .form-top, .form-bot { display: none; }
+    .container .banner { order: 1; height: 12rem; background-color: transparent; }
+    .circle { width: 6rem; height: 6rem; }
+    .circle-2 { width: 8rem; height: 8rem; }
+    .form .login, .form .register { width: 100%; position: relative; transform: none; }
+}
