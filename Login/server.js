@@ -1,65 +1,245 @@
 const express = require('express');
 const path = require('path');
+const multer = require('multer'); 
+const fs = require('fs'); 
 const app = express();
 
-// Configuración para leer datos JSON
+// --- CONFIGURACIÓN DE CARPETAS ---
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) { fs.mkdirSync(uploadDir); }
+
+// --- CONFIGURACIÓN DE MULTER (SOLO IMÁGENES) ---
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => { cb(null, 'uploads/'); },
+    filename: (req, file, cb) => { cb(null, Date.now() + '-' + file.originalname); }
+});
+
+// Filtro para aceptar solo imágenes (jpeg, png, webp, gif)
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+    } else {
+        cb(new Error('Formato no válido. Solo se permiten imágenes.'), false);
+    }
+};
+
+const upload = multer({ storage: storage, fileFilter: fileFilter });
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Servir archivos estáticos (HTML, CSS, JS, Imágenes)
 app.use(express.static(__dirname));
+app.use('/uploads', express.static('uploads')); 
 
-// --- BASE DE DATOS TEMPORAL (Este se va almacenar en la lap que usemos de server) ---
+// --- BASE DE DATOS EN MEMORIA ---
 let usuariosRegistrados = []; 
+let publicaciones = []; 
+let logEventos = []; 
+let rastroUsuarios = {}; 
 
-// --- RUTA DE REGISTRO ---
+// --- FUNCION: BORRAR ARCHIVOS FÍSICOS ---
+function eliminarArchivos(listaRutas) {
+    listaRutas.forEach(ruta => {
+        const fullPath = path.join(__dirname, ruta);
+        if (fs.existsSync(fullPath)) {
+            fs.unlink(fullPath, (err) => {
+                if (err) console.error("Error al borrar archivo:", ruta);
+            });
+        }
+    });
+}
+
+function registrarEvento(usuario, rol, accion, detalles = "") {
+    const evento = {
+        fecha: new Date().toLocaleString(),
+        usuario, rol, accion, detalles
+    };
+    logEventos.push(evento);
+    if (logEventos.length > 500) logEventos.shift(); 
+    console.log(`[${evento.fecha}] ${usuario} (${rol}): ${accion}`);
+}
+
+// --- CREDENCIALES ---
+const ADMIN_SERVER = { email: "admin@servidor.com", pass: "root123", role: "admin_server", nombre: "Admin" };
+const MODERADOR = { email: "mod@agora.com", pass: "mod123", role: "moderador", nombre: "Moderador" };
+
+// --- RUTAS DE LOGIN Y REGISTRO ---
 app.post('/register', (req, res) => {
     const { fullname, email_reg, password_reg } = req.body;
-
-    usuariosRegistrados.push({
-        nombre: fullname,
-        email: email_reg,
-        password: password_reg
-    });
-
-    console.log(`📝 Nuevo registro: ${fullname} (${email_reg})`);
+    usuariosRegistrados.push({ nombre: fullname, email: email_reg, password: password_reg });
+    registrarEvento(fullname, "user", "Registro Nuevo", `Email: ${email_reg}`);
     res.status(200).send("Registro exitoso");
 });
 
-// --- RUTA DE LOGIN ---
 app.post('/login', (req, res) => {
     const { email, password } = req.body;
-    const ADMIN_USER = "admin@agora.com";
-    const ADMIN_PASS = "admin123";
+    let u = null;
 
-    console.log(`📡 Intento de acceso: ${email}`);
+    if (email === ADMIN_SERVER.email && password === ADMIN_SERVER.pass) u = ADMIN_SERVER;
+    else if (email === MODERADOR.email && password === MODERADOR.pass) u = MODERADOR;
+    else u = usuariosRegistrados.find(user => user.email === email && user.password === password);
 
-    // 1. Verificación de Admin
-    if (email === ADMIN_USER && password === ADMIN_PASS) {
-        console.log("👑 Acceso de Administrador concedido.");
-        return res.json({ role: 'admin' });
+    if (u) {
+        registrarEvento(u.nombre || "Usuario", u.role || "user", "Inicio de Sesión", "Acceso al sistema");
+        return res.json({ role: u.role || 'user', nombre: u.nombre });
     }
-
-    // 2. Verificación de Usuario Normal
-    const usuarioEncontrado = usuariosRegistrados.find(u => u.email === email && u.password === password);
-
-    if (usuarioEncontrado) {
-        console.log(`👤 Usuario logueado: ${usuarioEncontrado.nombre}`);
-        return res.json({ role: 'user' });
-    } else {
-        console.log("❌ Acceso fallido: No encontrado.");
-        return res.status(401).json({ message: "Usuario no registrado" });
-    }
+    res.status(401).json({ message: "Error de credenciales" });
 });
 
-// --- INICIAR EL SERVIDOR (y mensaje de el link y la cuenta admin ya hecha por si se nos olvida)---
+app.get('/admin-full-stats', (req, res) => {
+    const ahora = Date.now();
+    const onlineReal = Object.values(rastroUsuarios).filter(t => ahora - t < 20000).length;
+    res.json({
+        totalPosts: publicaciones.length,
+        conectados: onlineReal || 1,
+        eventos: logEventos
+    });
+});
+
+app.post('/track-online', (req, res) => {
+    const { nombre } = req.body;
+    if (nombre) rastroUsuarios[nombre] = Date.now();
+    res.sendStatus(200);
+});
+
+// --- PUBLICAR ---
+app.post('/publicar', upload.array('imagenes', 10), (req, res) => {
+    const { texto, autor, rol } = req.body; 
+    const nuevoPost = {
+        id: Date.now(),
+        texto, 
+        autor: autor || "Anónimo", 
+        rol: rol || "user", 
+        imagenes: req.files ? req.files.map(file => `/uploads/${file.filename}`) : [],
+        comentarios: [], 
+        fecha: new Date().toLocaleString(),
+        estado: 'disponible' 
+    };
+    publicaciones.push(nuevoPost);
+    registrarEvento(nuevoPost.autor, nuevoPost.rol, "Nueva Publicación", `Post ID: ${nuevoPost.id}`);
+    res.status(201).json(nuevoPost);
+});
+
+app.get('/get-posts', (req, res) => { res.json(publicaciones); });
+
+// --- RUTA: COMENTAR ---
+app.post('/comentar', (req, res) => {
+    const { postId, textoComentario, autor, rol } = req.body; 
+    const post = publicaciones.find(p => p.id == postId);
+    if (post) {
+        post.comentarios.push({
+            texto: textoComentario,
+            autor: autor,
+            rol: rol || "user", 
+            fecha: new Date().toLocaleString()
+        });
+        registrarEvento(autor, rol || "user", "Nuevo Comentario", `En post ID: ${postId}`);
+        res.status(200).json({ message: "Añadido" });
+    } else { res.status(404).json({ message: "Error" }); }
+});
+
+// --- RUTA: CAMBIAR ESTADO (Vendido/Disponible) ---
+app.post('/cambiar-estado', (req, res) => {
+    const { postId, nuevoEstado, nombreUsuario, role } = req.body;
+    const post = publicaciones.find(p => p.id == postId);
+    if (post && (post.autor === nombreUsuario || role === 'admin_server')) {
+        post.estado = nuevoEstado;
+        registrarEvento(nombreUsuario, role, "Cambio de Estado", `Post ${postId} -> ${nuevoEstado}`);
+        return res.status(200).json({ message: "Ok" });
+    }
+    res.status(403).json({ message: "No autorizado" });
+});
+
+// --- EDITAR POST ---
+app.post('/editar-post', upload.array('imagenes', 10), (req, res) => {
+    const { postId, nuevoTexto, nombreUsuario, role, imagenesRestantes } = req.body;
+    const post = publicaciones.find(p => p.id == postId);
+    
+    if (post && (post.autor === nombreUsuario || role === 'admin_server')) {
+        const fotosQueSeQuedan = Array.isArray(imagenesRestantes) ? imagenesRestantes : (imagenesRestantes ? [imagenesRestantes] : []);
+        const fotosParaBorrar = post.imagenes.filter(img => !fotosQueSeQuedan.includes(img));
+        eliminarArchivos(fotosParaBorrar);
+
+        post.texto = nuevoTexto;
+        const nuevasFotos = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
+        post.imagenes = [...fotosQueSeQuedan, ...nuevasFotos];
+
+        registrarEvento(nombreUsuario, role, "Edición de Post", `ID: ${postId}`);
+        return res.status(200).json({ message: "Ok" });
+    }
+    res.status(403).json({ message: "No autorizado" });
+});
+
+// --- BORRAR POST ---
+app.post('/borrar-post', (req, res) => {
+    const { postId, nombreUsuario, role, razon } = req.body;
+    const idx = publicaciones.findIndex(p => p.id == postId);
+    if (idx !== -1) {
+        const post = publicaciones[idx];
+        if (post.autor === nombreUsuario || role === 'moderador' || role === 'admin_server') {
+            eliminarArchivos(post.imagenes);
+            registrarEvento(nombreUsuario, role, "Eliminación de Post", `ID: ${postId} | Razón: ${razon || 'Autor'}`);
+            publicaciones.splice(idx, 1);
+            return res.status(200).json({ message: "Eliminado" });
+        }
+    }
+    res.status(403).json({ message: "Sin permisos" });
+});
+
+// --- NUEVA RUTA: EDITAR COMENTARIO ---
+app.post('/editar-comentario', (req, res) => {
+    const { postId, index, nuevoTexto, nombreUsuario, role } = req.body;
+    const post = publicaciones.find(p => p.id == postId);
+    
+    if (post && post.comentarios[index]) {
+        if (post.comentarios[index].autor === nombreUsuario || role === 'admin_server') {
+            post.comentarios[index].texto = nuevoTexto;
+            registrarEvento(nombreUsuario, role, "Edición de Comentario", `Post ID: ${postId}`);
+            return res.status(200).json({ message: "Comentario editado" });
+        }
+    }
+    res.status(403).json({ message: "Sin permisos" });
+});
+
+// --- NUEVA RUTA: BORRAR COMENTARIO ---
+app.post('/borrar-comentario', (req, res) => {
+    const { postId, comentarioIndex, nombreUsuario, role, razon } = req.body;
+    const post = publicaciones.find(p => p.id == postId);
+    
+    if (post && post.comentarios[comentarioIndex]) {
+        const comentario = post.comentarios[comentarioIndex];
+        
+        if (comentario.autor === nombreUsuario || role === 'moderador' || role === 'admin_server') {
+            post.comentarios.splice(comentarioIndex, 1);
+            registrarEvento(nombreUsuario, role, "Eliminación de Comentario", `Post ID: ${postId} | Razón: ${razon || 'Autor'}`);
+            return res.status(200).json({ message: "Comentario eliminado" });
+        }
+    }
+    res.status(403).json({ message: "Sin permisos o no encontrado" });
+});
+
+// --- VACIAR MURO ---
+app.post('/limpiar-servidor', (req, res) => {
+    const { confirmacion } = req.body;
+    if (confirmacion === "CONFIRMAR") {
+        const archivos = fs.readdirSync(uploadDir);
+        for (const archivo of archivos) {
+            fs.unlinkSync(path.join(uploadDir, archivo));
+        }
+        publicaciones = [];
+        registrarEvento("ADMIN", "admin_server", "VACIADO TOTAL", "Disco y Muro reseteados");
+        return res.status(200).json({ message: "Limpio" });
+    }
+    res.status(400).json({ message: "Palabra incorrecta" });
+});
+
 const PORT = 3000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`
     🚀 SERVIDOR AGORA INICIADO
     --------------------------------------------
     👉 Local: http://localhost:${PORT}
-    👉 Admin: admin@agora.com / admin123
-    --------------------------------------------
-    `);
+    👉 Admin Servidor: admin@servidor.com / root123
+    👉 Moderador: mod@agora.com / mod123
+    👉 Monitor de actividad activo...
+    --------------------------------------------`);
 });
