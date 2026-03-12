@@ -6,8 +6,7 @@ const banner = document.getElementById('banner');
 const loginForm = document.getElementById('login-form');
 const registerForm = document.getElementById('register-form');
 
-/* --- LÓGICA VISUAL (Intercambio entre Login y lo del Registro) --- */
-
+/* --- LÓGICA VISUAL --- */
 signUpBtn.addEventListener('click', (e) => {
     e.preventDefault();
     formContainer.classList.add('toggle');
@@ -20,9 +19,8 @@ signInBtn.addEventListener('click', (e) => {
     banner.classList.remove('toggle');
 });
 
-/* --- LÓGICA DE COMUNICACIÓN CON E SERVER --- */
+/* --- LÓGICA DE COMUNICACIÓN CON EL SERVER --- */
 
-// Evento para el Inicio de Sesión
 loginForm.addEventListener('submit', async (e) => {
     e.preventDefault(); 
     
@@ -36,27 +34,35 @@ loginForm.addEventListener('submit', async (e) => {
             body: JSON.stringify({ email, password })
         });
 
-        const data = await response.json(); // Leemos la respuesta del servidor
+        const data = await response.json(); 
 
         if (response.ok) {
-            // Caso: Éxito (Admin o Usuario)
-            if (data.role === 'admin') {
-                alert("👑 Sesión iniciada como ADMINISTRADOR");
+            // Guardamos los datos de sesión
+            localStorage.setItem('nombreUsuario', data.nombre);
+            localStorage.setItem('userRole', data.role);
+
+            // --- REDIRECCIÓN SEGÚN ROL ---
+            if (data.role === 'admin_server') {
+                // El administrador técnico va a su panel privado
                 window.location.href = "admin.html";
+            } else if (data.role === 'moderador') {
+                // El moderador va al muro con herramientas de limpieza
+                alert("🛡️ Modo: Moderador de Agora");
+                window.location.href = "publicaciones.html";
             } else {
+                // El usuario normal va al muro estándar
                 window.location.href = "publicaciones.html";
             }
+            
         } else {
-            // Caso: Error (Aquí capturamos lo que pediste)
-            alert("❌ Error: " + (data.message || "Credenciales incorrectas") + ". ¡Por favor regístrate!");
+            alert("❌ " + (data.message || "Credenciales incorrectas"));
         }
     } catch (error) {
         console.error("Error conectando al servidor:", error);
-        alert("⚠️ No se pudo conectar con el servidor. ¿Iniciaste el comando 'node server.js'?");
+        alert("⚠️ Error de conexión.");
     }
 });
 
-// Evento/funcion para el Registro
 registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -75,7 +81,6 @@ registerForm.addEventListener('submit', async (e) => {
 
         if (response.ok) {
             alert("✅ ¡Registro exitoso! Ya puedes iniciar sesión.");
-            // Regresamos automáticamente al formulario de login
             formContainer.classList.remove('toggle');
             banner.classList.remove('toggle');
         }

@@ -4,62 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agora - Muro de Publicaciones</title>
-    <link rel="stylesheet" href="style.css"> <style>
-        body {
-            background-color: #35568a;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-            padding: 2rem;
-        }
-        .muro-container {
-            width: 100%;
-            max-width: 700px;
-            background: white;
-            border-radius: 0.8rem;
-            padding: 2rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-        h2 { color: #11317e; margin-bottom: 1.5rem; border-bottom: 2px solid #eee; padding-bottom: 0.5rem; }
-        
-        .publicador {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-        textarea {
-            width: 100%;
-            height: 80px;
-            padding: 1rem;
-            border: 1px solid #cbcbcb;
-            border-radius: 0.5rem;
-            font-family: inherit;
-            resize: none;
-        }
-        .btn-publicar {
-            align-self: flex-end;
-            background-color: #613DB7;
-            color: white;
-            border: none;
-            padding: 0.7rem 1.5rem;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            font-weight: 600;
-            transition: 0.3s;
-        }
-        .btn-publicar:hover { background-color: #4a2e8a; }
-
-        .feed { display: flex; flex-direction: column; gap: 1rem; }
-        .post {
-            background: #f4f5f9;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            border-left: 5px solid #613DB7;
-        }
-        .post-header { font-weight: 700; font-size: 0.8rem; color: #11317e; margin-bottom: 0.4rem; }
-    </style>
+    <link rel="stylesheet" href="style.css"> 
 </head>
 <body>
 
@@ -68,11 +13,29 @@
         
         <div class="publicador">
             <textarea id="postContent" placeholder="¿Qué quieres compartir con el equipo?"></textarea>
-            <button class="btn-publicar" id="btnPublish">Publicar en el muro</button>
+            
+            <div id="preview-container" class="edit-preview-box" style="display: none;"></div>
+
+            <div class="acciones-publicador">
+                <label for="postImage" class="btn-image">
+                    <span>📷 Añadir Fotos</span>
+                    <input type="file" id="postImage" accept="image/png, image/jpeg, image/jpg, image/webp" multiple style="display: none;">
+                </label>
+                <button class="btn-publicar" id="btnPublish">Publicar</button>
+            </div>
         </div>
 
         <div class="feed" id="posts">
-            </div>
+        </div>
+    </div>
+
+    <div id="imageModal" class="image-modal">
+        <span class="modal-close" id="closeModal">&times;</span>
+        <img class="modal-content" id="imgModalFull">
+        <div class="modal-nav" id="modalNav" style="display: none;">
+            <button id="btnPrevImg">◀ Anterior</button>
+            <button id="btnNextImg">Siguiente ▶</button>
+        </div>
     </div>
 
     <script src="muro.js"></script>
