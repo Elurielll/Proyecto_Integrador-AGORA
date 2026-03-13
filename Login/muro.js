@@ -44,17 +44,35 @@ if (postImage) {
 
 function actualizarVistaPrevia() {
     if (!previewContainer) return;
-    previewContainer.innerHTML = "";
+    
+    previewContainer.innerHTML = ""; 
+
+    // REGLA DE VISIBILIDAD: Activa el contenedor si hay fotos
+    if (archivosSeleccionados.length > 0) {
+        previewContainer.style.display = "flex";
+        previewContainer.style.flexWrap = "wrap";
+        previewContainer.style.gap = "10px";
+        previewContainer.style.marginBottom = "15px";
+    } else {
+        previewContainer.style.display = "none";
+    }
+
     archivosSeleccionados.forEach((file, index) => {
         const reader = new FileReader();
+        
+        const div = document.createElement('div');
+        div.className = "preview-item";
+        div.style.position = "relative";
+        div.style.width = "80px";
+        div.style.height = "80px";
+        previewContainer.appendChild(div);
+
         reader.onload = (e) => {
-            const div = document.createElement('div');
-            div.className = "preview-item";
             div.innerHTML = `
-                <img src="${e.target.result}">
-                <button type="button" class="btn-remove" onclick="eliminarFoto(${index})">×</button>
+                <img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem; border: 1px solid #ddd;">
+                <button type="button" class="btn-remove" onclick="eliminarFoto(${index})" 
+                    style="position: absolute; top: -5px; right: -5px; background: #ff4d4d; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">×</button>
             `;
-            previewContainer.appendChild(div);
         };
         reader.readAsDataURL(file);
     });
@@ -86,7 +104,6 @@ async function cargarPosts() {
             const claseVendido = esDisponible ? '' : 'post-vendido';
             const etiquetaEstado = `<div class="badge ${esDisponible ? 'disponible' : 'vendido'}">${esDisponible ? 'Disponible' : 'VENDIDO'}</div>`;
 
-            // INSIGNIA MODERADOR EN PUBLICACIÓN (ARRIBA DEL NOMBRE)
             const insigniaPost = (post.rol === 'moderador' || post.rol === 'admin_server' || post.autor === 'Moderador') 
                 ? `<span class="badge-mod">MODERADOR</span>` : '';
 
@@ -110,8 +127,6 @@ async function cargarPosts() {
             let comentariosHtml = post.comentarios.map((com, index) => {
                 const esDuenioCom = (com.autor === usuarioActual);
                 const puedeBorrarCom = esDuenioCom || esMod || esAdminServ;
-                
-                // INSIGNIA MODERADOR EN COMENTARIO (ARRIBA DEL NOMBRE)
                 const insigniaCom = (com.rol === 'moderador' || com.rol === 'admin_server' || com.autor === 'Moderador') 
                     ? `<span class="badge-mod">MODERADOR</span>` : '';
                 
@@ -120,7 +135,10 @@ async function cargarPosts() {
                         <div style="display:flex; flex-direction:column; width:100%;">
                             ${insigniaCom}
                             <div style="display:flex; justify-content:space-between; align-items: flex-start; margin-top:2px;">
-                                <div><strong>${com.autor}:</strong> <span>${com.texto}</span></div>
+                                <div>
+                                    <a href="perfil.html?user=${encodeURIComponent(com.autor)}" class="autor-link" style="text-decoration:none; color:inherit; font-weight:bold;">${com.autor}:</a> 
+                                    <span>${com.texto}</span>
+                                </div>
                                 <div style="display:flex; gap:8px;">
                                     ${esDuenioCom ? `<button onclick="iniciarEdicionComentario(${post.id}, ${index}, '${com.texto.replace(/'/g, "\\'")}')" style="font-size:0.65rem; color:#613DB7; cursor:pointer; border:none; background:none; text-decoration:underline;">Editar</button>` : ''}
                                     ${puedeBorrarCom ? `<span class="del-com" onclick="borrarComentario(${post.id}, ${index}, '${com.autor}')" style="cursor:pointer; color:red; font-weight:bold;">×</span>` : ''}
@@ -130,20 +148,13 @@ async function cargarPosts() {
                     </div>`;
             }).join('');
 
-            // ---> LÓGICA DE GRID DE IMÁGENES <---
             let htmlImagenes = '';
             if (post.imagenes && post.imagenes.length > 0) {
                 const numImgs = post.imagenes.length;
-                let gridClass = 'grid-1';
-                if (numImgs === 2) gridClass = 'grid-2';
-                else if (numImgs === 3) gridClass = 'grid-3';
-                else if (numImgs === 4) gridClass = 'grid-4';
-                else if (numImgs > 4) gridClass = 'grid-more';
-
+                let gridClass = numImgs >= 4 ? 'grid-4' : `grid-${numImgs}`;
                 let imgsArrayString = JSON.stringify(post.imagenes).replace(/"/g, '&quot;');
 
                 htmlImagenes = `<div class="image-grid ${gridClass}" id="grid-${post.id}">`;
-                
                 post.imagenes.slice(0, 4).forEach((url, i) => {
                     if (i === 3 && numImgs > 4) {
                         htmlImagenes += `
@@ -164,7 +175,11 @@ async function cargarPosts() {
                     <div class="post-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
                         <div style="display: flex; flex-direction: column;">
                             ${insigniaPost}
-                            <strong style="margin-top:4px;">${post.autor} compartió:</strong>
+                            <strong style="margin-top:4px;">
+                                <a href="perfil.html?user=${encodeURIComponent(post.autor)}" class="autor-link" style="text-decoration:none; color:var(--primary-color);">
+                                    ${post.autor}
+                                </a> compartió:
+                            </strong>
                         </div>
                         ${menuHtml}
                     </div>
@@ -185,7 +200,7 @@ async function cargarPosts() {
     } catch (error) { console.error("Error cargando posts:", error); }
 }
 
-// --- EDICIÓN AVANZADA (IDÉNTICA AL PUBLICADOR) ---
+// --- EDICIÓN AVANZADA ---
 window.iniciarEdicion = async (postId) => {
     const response = await fetch('/get-posts');
     const posts = await response.json();
@@ -199,24 +214,22 @@ window.iniciarEdicion = async (postId) => {
     body.innerHTML = `
         <div class="publicador" style="margin-bottom: 0; padding: 1rem; border: 1px dashed #613DB7;">
             <textarea id="edit-txt-${postId}" style="width: 100%; height: 100px; padding: 1rem; border: 1px solid #cbcbcb; border-radius: 0.5rem; resize: none; outline: none; font-family: inherit;">${post.texto}</textarea>
-            
             <div id="edit-preview-container-${postId}" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 0.5rem;">
                 ${window[`fotos_edit_${postId}`].map((url, i) => `
                     <div class="preview-item" style="position: relative; width: 80px; height: 80px;">
                         <img src="${url}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 0.5rem; border: 1px solid #ddd;">
-                        <button type="button" class="btn-remove" onclick="quitarFotoDeEdicion(${postId}, ${i})">×</button>
+                        <button type="button" class="btn-remove" onclick="quitarFotoDeEdicion(${postId}, ${i})" style="position: absolute; top: -5px; right: -5px; background: #ff4d4d; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;">×</button>
                     </div>
                 `).join('')}
             </div>
-            
             <div class="acciones-publicador" style="margin-top: 1rem;">
                 <label for="edit-new-files-${postId}" class="btn-image">
                     <span>📷 Añadir Fotos</span>
-                    <input type="file" id="edit-new-files-${postId}" accept="image/png, image/jpeg, image/jpg, image/webp" multiple style="display:none;" onchange="agregarFotosEdicion(${postId}, this)">
+                    <input type="file" id="edit-new-files-${postId}" accept="image/*" multiple style="display:none;" onchange="agregarFotosEdicion(${postId}, this)">
                 </label>
                 <div style="display: flex; gap: 10px;">
                     <button onclick="guardarEdicionCompleta(${postId})" class="btn-publicar">Guardar</button>
-                    <button onclick="cargarPosts()" style="background:#64748b; color:white; border:none; padding:0.7rem 1.5rem; border-radius:0.5rem; cursor:pointer; font-weight:600;">Cancelar</button>
+                    <button onclick="cargarPosts()" style="background:#64748b; color:white; border:none; padding:0.7rem 1.5rem; border-radius:0.5rem; cursor:pointer;">Cancelar</button>
                 </div>
             </div>
         </div>
@@ -253,35 +266,28 @@ window.actualizarPreviewEdicion = (postId) => {
 window.guardarEdicionCompleta = async (postId) => {
     const nuevoTexto = document.getElementById(`edit-txt-${postId}`).value;
     const archivosNuevos = window[`nuevos_archivos_${postId}`] || [];
-    
     const formData = new FormData();
     formData.append('postId', postId);
     formData.append('nuevoTexto', nuevoTexto);
     formData.append('nombreUsuario', obtenerNombreUsuario());
     formData.append('role', obtenerRol());
-    
     window[`fotos_edit_${postId}`].forEach(url => {
         if(url.startsWith('/uploads')) formData.append('imagenesRestantes', url);
     });
-    
     archivosNuevos.forEach(file => formData.append('imagenes', file));
-
     await fetch('/editar-post', { method: 'POST', body: formData });
-    
-    delete window[`nuevos_archivos_${postId}`];
-    delete window[`fotos_edit_${postId}`];
     cargarPosts();
 };
 
-// --- EDICIÓN DE COMENTARIOS ---
+// --- COMENTARIOS Y ESTADOS ---
 window.iniciarEdicionComentario = (postId, index, textoActual) => {
     const comItem = document.getElementById(`com-item-${postId}-${index}`);
     comItem.innerHTML = `
         <div style="width: 100%; display: flex; flex-direction: column; gap: 5px; padding: 5px 0;">
             <input type="text" id="edit-com-input-${postId}-${index}" value="${textoActual}" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 0.3rem; font-size: 0.85rem; width: 100%;">
             <div style="display:flex; gap: 5px;">
-                <button onclick="guardarEdicionComentario(${postId}, ${index})" style="background: #059669; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.75rem;">Guardar</button>
-                <button onclick="cargarPosts()" style="background: #dc2626; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.75rem;">Cancelar</button>
+                <button onclick="guardarEdicionComentario(${postId}, ${index})" style="background: #059669; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer;">Guardar</button>
+                <button onclick="cargarPosts()" style="background: #dc2626; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer;">Cancelar</button>
             </div>
         </div>
     `;
@@ -290,7 +296,6 @@ window.iniciarEdicionComentario = (postId, index, textoActual) => {
 window.guardarEdicionComentario = async (postId, index) => {
     const nuevoTexto = document.getElementById(`edit-com-input-${postId}-${index}`).value.trim();
     if(!nuevoTexto) return;
-
     await fetch('/editar-comentario', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -299,7 +304,6 @@ window.guardarEdicionComentario = async (postId, index) => {
     cargarPosts();
 };
 
-// --- ESTADOS Y COMENTARIOS ---
 window.cambiarEstado = async (postId, nuevoEstado) => {
     await fetch('/cambiar-estado', {
         method: 'POST',
@@ -313,7 +317,6 @@ window.enviarComentario = async (postId) => {
     const input = document.getElementById(`input-${postId}`);
     const texto = input.value.trim();
     if (!texto) return;
-
     await fetch('/comentar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -323,24 +326,17 @@ window.enviarComentario = async (postId) => {
     cargarPosts();
 };
 
-// --- BORRADO LÓGICO ---
 window.borrarComentario = async (postId, comentarioIndex, autorCom) => {
     const rol = obtenerRol();
     const usuarioActual = obtenerNombreUsuario();
     let razon = "";
-
     if (autorCom === usuarioActual) {
-        if (!confirm("¿Seguro que deseas borrar tu comentario?")) return;
-        razon = "Borrado por el autor";
+        if (!confirm("¿Borrar comentario?")) return;
+        razon = "Autor";
     } else if (rol === 'moderador' || rol === 'admin_server') {
-        let opcion = prompt(`MODERACIÓN (Comentario en Post ID-${postId}).\nSelecciona el número de la razón:\n1. Lenguaje Ofensivo\n2. Spam\n3. Otro`);
-        if (opcion === null) return;
-        
-        if (opcion === "1") razon = "Lenguaje Ofensivo";
-        else if (opcion === "2") razon = "Spam";
-        else razon = "Incumplimiento de reglas";
+        razon = prompt("Razón de moderación:");
+        if (razon === null) return;
     }
-
     await fetch('/borrar-comentario', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -353,20 +349,13 @@ window.borrarPost = async (postId, autorPost) => {
     const rol = obtenerRol();
     const usuarioActual = obtenerNombreUsuario();
     let razon = "";
-
     if (autorPost === usuarioActual) {
-        if (!confirm(`¿Seguro que deseas borrar tu publicación?`)) return;
-        razon = "Borrado por el autor";
+        if (!confirm("¿Borrar post?")) return;
+        razon = "Autor";
     } else if (rol === 'moderador' || rol === 'admin_server') {
-        let opcion = prompt(`MODERACIÓN (Post ID-${postId}).\nSelecciona el número de la razón:\n1. Contenido Inapropiado\n2. Spam o Flood\n3. Venta Prohibida\n4. Otro`);
-        if (opcion === null) return; 
-        
-        if (opcion === "1") razon = "Contenido Inapropiado";
-        else if (opcion === "2") razon = "Spam o Flood";
-        else if (opcion === "3") razon = "Venta Prohibida";
-        else razon = "Incumplimiento de normas";
+        razon = prompt("Razón de moderación:");
+        if (razon === null) return;
     }
-
     await fetch('/borrar-post', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -375,7 +364,7 @@ window.borrarPost = async (postId, autorPost) => {
     cargarPosts();
 };
 
-// --- AUXILIARES ---
+// --- AUXILIARES Y EVENTOS ---
 window.toggleMenu = (event, postId) => {
     event.stopPropagation();
     document.querySelectorAll('.menu-dropdown').forEach(m => { 
@@ -408,18 +397,12 @@ document.addEventListener('click', () => {
     document.querySelectorAll('.menu-dropdown').forEach(m => m.classList.remove('show'));
 });
 
-cargarPosts();
-
-// =========================================
-//   SISTEMA DE VISOR DE IMÁGENES (MODAL)
-// =========================================
+// --- VISOR DE IMÁGENES ---
 let currentFotosVisor = [];
 let currentIndexVisor = 0;
-
 const modal = document.getElementById('imageModal');
 const modalImg = document.getElementById('imgModalFull');
 const closeModal = document.getElementById('closeModal');
-const modalNav = document.getElementById('modalNav');
 const btnPrevImg = document.getElementById('btnPrevImg');
 const btnNextImg = document.getElementById('btnNextImg');
 
@@ -429,7 +412,6 @@ window.abrirVisor = (fotosString, indexClick) => {
     } catch (e) {
         currentFotosVisor = [fotosString]; 
     }
-    
     currentIndexVisor = indexClick;
     actualizarImagenVisor();
     modal.classList.add('show');
@@ -438,12 +420,8 @@ window.abrirVisor = (fotosString, indexClick) => {
 function actualizarImagenVisor() {
     if(!modalImg) return;
     modalImg.src = currentFotosVisor[currentIndexVisor];
-    
-    if (currentFotosVisor.length > 1) {
-        if(modalNav) modalNav.style.display = 'flex';
-    } else {
-        if(modalNav) modalNav.style.display = 'none';
-    }
+    const nav = document.getElementById('modalNav');
+    if(nav) nav.style.display = currentFotosVisor.length > 1 ? 'flex' : 'none';
 }
 
 if (closeModal) closeModal.onclick = () => modal.classList.remove('show');
@@ -451,22 +429,8 @@ if (btnPrevImg) btnPrevImg.onclick = () => moverVisor(-1);
 if (btnNextImg) btnNextImg.onclick = () => moverVisor(1);
 
 function moverVisor(direccion) {
-    currentIndexVisor += direccion;
-    if (currentIndexVisor < 0) currentIndexVisor = currentFotosVisor.length - 1;
-    if (currentIndexVisor >= currentFotosVisor.length) currentIndexVisor = 0;
+    currentIndexVisor = (currentIndexVisor + direccion + currentFotosVisor.length) % currentFotosVisor.length;
     actualizarImagenVisor();
 }
 
-if (modal) {
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.classList.remove('show');
-    });
-}
-
-document.addEventListener('keydown', (e) => {
-    if (modal && modal.classList.contains('show')) {
-        if (e.key === 'Escape') modal.classList.remove('show');
-        if (e.key === 'ArrowRight') moverVisor(1);
-        if (e.key === 'ArrowLeft') moverVisor(-1);
-    }
-});
+cargarPosts();
