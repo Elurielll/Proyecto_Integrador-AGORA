@@ -7,9 +7,6 @@ Equipo 6
 - [Vista Previa](#-vista-previa)
 - [Características Principales](#-características-principales)
 - [Tecnologías Utilizadas](#-tecnologías-utilizadas)
-- [Instalación](#-instalación)
-- [Uso](#-uso)
-- [Estructura del Proyecto](#-estructura-del-proyecto)
 
 ## Vista Previa 📸 
 
@@ -31,29 +28,4 @@ Equipo 6
 - **Base de Datos:** Estructura de datos en memoria / Almacenamiento local.
 - **Herramientas y APIs:** npm, Fetch API, Web Storage API (LocalStorage).
 
-##  Instalación 🪛
-Pasos para utilizar el proyecto localmente...
-   
-##  Uso 💻
--
-
-
-##  Estructura del Proyecto 📁
-Los archivos más importantes para entender la lógica:
-
-
-## ¡Atreve a emprender! ⛓️‍💥
-Este proyecto fue creado con el objetivo de facilitar y promover la compraventa local sea de donde sea que estes.
-Si les gustó el proyecto, considera dejarle una estrella(⭐) y no olviden compartirlo con sus amigos!!!.
-
-
-##  Contacto 📨
-- *Desarrolladores:*
-- Ramirez Larios Uriel Dominyk
-- Estefanía Radillo Domínguez
-- Arres Naranjo Angel Emanuel
-- Kevin Orlando Olivera López
-
-- *Email:*
-- uramirez6@ucol.com.mx
            
