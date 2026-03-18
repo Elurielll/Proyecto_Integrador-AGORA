@@ -3,11 +3,6 @@ Equipo 6
 
 -Desarrollo de una plataforma web sobre compraventa de productos nuevos o usados cerca de nuestra localidad dependiendo nuestro Estado y Municipio. que permita usar a miles de usuarios para poder realizar compraventa en su localidad. desarrollado y programado en Visual Studio Code en lenguaje JavaScript y HTML principalmente.
 
-## Contenidos📋 
-- [Vista Previa](#-vista-previa)
-- [Características Principales](#-características-principales)
-- [Tecnologías Utilizadas](#-tecnologías-utilizadas)
-
 ## Vista Previa 📸 
 
 "Pantalla Principal"<img width="1582" height="765" src="https://github.com/user-attachments/assets/041ff126-66e1-44e5-accd-a2a0e38334e8" />
