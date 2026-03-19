@@ -48,8 +48,8 @@ El proyecto fue desarrollado en **Visual Studio Code** utilizando principalmente
 ---
 
 ## 📬 Contacto  
-
-[![GitHub](https://img.shields.io/badge/GitHub-Perfil-black?style=for-the-badge&logo=github)](https://github.com/tu-usuario)
+-**Ramirez Larios Uriel Dominyk**
+[![GitHub](https://img.shields.io/badge/GitHub-Perfil-black?style=for-the-badge&logo=github)](https://github.com/Elurielll)
 
 ---
 
