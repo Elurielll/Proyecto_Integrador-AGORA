@@ -50,6 +50,12 @@ El proyecto fue desarrollado en **Visual Studio Code** utilizando principalmente
 ## 📬 Contacto  
 -**Ramirez Larios Uriel Dominyk**
 [![GitHub](https://img.shields.io/badge/GitHub-Perfil-black?style=for-the-badge&logo=github)](https://github.com/Elurielll)
+-**Estefanía Radillo Domínguez**
+[![GitHub](https://img.shields.io/badge/GitHub-Perfil-black?style=for-the-badge&logo=github)](https://github.com/Esteffz)
+-**Kevin Orlando Olivera López**
+[![GitHub](https://img.shields.io/badge/GitHub-Perfil-black?style=for-the-badge&logo=github)](https://github.com/kolivera2)
+-**Arres Naranjo Angel Emanuel**
+[![GitHub](https://img.shields.io/badge/GitHub-Perfil-black?style=for-the-badge&logo=github)](https://github.com/4NGEL3MANUEL)
 
 ---
 
