@@ -309,3 +309,225 @@ body {
     from { opacity: 0; transform: translateY(-5px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* =========================================
+   8. BARRA LATERAL Y CATEGORÍAS - Kevin
+========================================= */
+.pagina-container {
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
+    align-items: flex-start;
+}
+
+.columna-izquierda {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-height: 100vh;
+    /*background: #1a1a2e;
+    border-radius: 0 16px 16px 0;*/
+}
+
+.nav-categorias {
+    width: 300px;
+    position: sticky;
+    top: 0;
+    background: #2a2a4e;
+    border-radius: 0 16px 16px 0;
+}
+
+.nav-categorias__link {
+    color: white;
+    display: block;
+    padding: 15px 0;
+    text-decoration: none;
+}
+
+.nav-categorias_link--inside {
+    border-radius: 6px;
+    padding-left: 20px;
+    display: block;
+    text-decoration: none;
+    color: white;
+}
+
+.nav-categorias_link--inside:hover { background: rgba(255,255,255,0.1); }
+
+.list-categorias {
+    width: 100%;
+    list-style: none;
+}
+
+.list-categorias__item {
+    list-style: none;
+    width: 100%;
+    text-align: center;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.list-categorias__button {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+    width: 70%;
+    margin: 0 auto;
+}
+
+.list-categorias__arrow {
+    margin-left: auto;
+    transition: transform .3s;
+    filter: invert(1);
+}
+
+.arrow .list-categorias__arrow { transform: rotate(90deg); }
+
+.list-categorias__show {
+    width: 80%;
+    margin-left: auto;
+    border-left: 2px solid white;
+    list-style: none;
+    transition: height .4s;
+    height: 0;
+    overflow-y: auto;
+    max-height: 250px;
+    scrollbar-width: thin;
+    scrollbar-color: white transparent;
+}
+
+.list-categorias__show::-webkit-scrollbar { width: 6px; }
+.list-categorias__show::-webkit-scrollbar-track { background: transparent; }
+.list-categorias__show::-webkit-scrollbar-thumb { background-color: white; border-radius: 10px; }
+
+/* =========================================
+   9. BOTÓN DE UBICACIÓN - Kevin
+========================================= */
+.ubicacion-container {
+    padding: 0.5rem 0.8rem;
+    width: 100%;
+}
+
+.btn-ubicacion {
+    background-color: #2a2a4e;
+    color: white;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.8rem;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    width: 100%;
+    text-align: left;
+}
+
+.btn-ubicacion:hover { background-color: #2a2a4e; }
+
+/* =========================================
+   10. MODAL DE UBICACIÓN - Kevin
+========================================= */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-overlay.activo { display: flex; }
+
+.modal {
+    background: white;
+    border-radius: 1rem;
+    padding: 2rem;
+    width: 400px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.modal-header h3 { color: #11317e; font-size: 1.2rem; }
+
+.modal-cerrar {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #303440;
+}
+
+.modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.modal-body label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #303440;
+}
+
+.modal-body input {
+    padding: 0.6rem 1rem;
+    border: 1px solid #cbcbcb;
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+    outline: none;
+}
+
+.modal-body input:focus { border-color: #11317e; }
+
+#listaEstados {
+    list-style: none;
+    max-height: 180px;
+    overflow-y: auto;
+    border: 1px solid #cbcbcb;
+    border-radius: 0.5rem;
+    display: none;
+}
+
+#listaEstados li {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+#listaEstados li:hover { background: #f0f0f0; }
+
+.btn-guardar {
+    background-color: #613DB7;
+    color: white;
+    border: none;
+    padding: 0.7rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+.btn-guardar:hover { background-color: #4a2e8a; }
+
+/* =========================================
+   11. MURO WRAPPER - Kevin
+========================================= */
+.muro-wrapper {
+    flex: 1;
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-start;
+    padding: 0.5rem;
+    min-height: 100vh;
+}
