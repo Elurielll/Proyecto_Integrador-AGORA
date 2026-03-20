@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil de Usuario - Ágora</title>
+    <link rel="stylesheet" href="style.css"> </head>
+<body class="perfil-body">
+
+    <header>
+        <nav>
+            <a href="publicaciones.html">Volver al Muro</a>
+        </nav>
+    </header>
+
+    <main class="perfil-container">
+        <section class="banner-perfil">
+            <div class="info-izquierda">
+                <div class="foto-wrapper">
+                    <img id="foto-perfil" src="/icons/AgoralCON.jpeg" alt="Foto de perfil">
+                </div>
+                <div class="texto-usuario">
+                    <h1 id="nombre-usuario">Nombre de Usuario</h1>
+                    <p id="bio-texto">Cargando biografía...</p>
+                    <div class="ubicacion-container">
+                        <span id="ubicacion-texto">Municipio, Estado</span>
+                        <button onclick="editarUbicacion()" class="btn-edit-small">📍 Editar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="botones-derecha">
+                <button class="btn-chat">Mensaje</button>
+                <button class="btn-reportar">Reportar</button>
+            </div>
+        </section>
+
+        <section class="feed-usuario">
+            <hr>
+            <h2>Mis Publicaciones</h2>
+            <div id="contenedor-publicaciones-propias" class="muro-grid">
+                </div>
+        </section>
+    </main>
+
+    <script src="perfil.js"></script>
+</body>
+</html>

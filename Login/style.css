@@ -1,0 +1,366 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+/* =========================================
+   1. RESET Y VARIABLES GLOBALES
+========================================= */
+* {
+    font-family: "Inter", sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg-color: #D3D1DF;
+    --bg-form-color: #FFFFFF;
+    --bg-banner-color: #F4F5F9;
+    --border-input-color: #CBCBCB;
+    --primary-color: #0b317e;
+    --danger-color: #ef4444;
+    --success-color: #16a34a;
+}
+
+body {
+    width: 100%;
+    min-height: 100vh;
+    background-color: rgb(53, 86, 138);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* =========================================
+   2. LOGIN / REGISTRO (INDEX.HTML)
+========================================= */
+.container {
+    width: 64rem;
+    height: 40rem;
+    border-radius: 0.3rem;
+    background-color: var(--bg-form-color);
+    display: flex;
+    justify-content: space-between;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+
+.form-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 1.2rem;
+    justify-content: space-between;
+}
+
+.form-container .form-top { font-size: 0.8rem; font-weight: 600; margin-left: 1.5rem; position: relative; }
+.form-container .form-top span::before {
+    content: ''; position: absolute; width: 0.5rem; height: 0.5rem; border-radius: 50%;
+    background-color: black; top: 50%; left: -1rem; transform: translateY(-50%);
+}
+.form-container .form-bot { font-size: 0.6rem; font-weight: 600; opacity: 0.4; text-align: left; padding-left: 0.5rem; }
+
+.form {
+    height: 80%; width: 100%; display: flex; flex-direction: column;
+    justify-content: center; align-items: center; position: relative; overflow: hidden;
+}
+
+.login, .register { width: 55%; position: absolute; transition: transform 0.8s, opacity 0.8s; }
+.login { opacity: 1; transform: translateY(0); }
+.form.toggle .login { transform: translateY(-150%); opacity: 0; }
+.register { transform: translateY(150%); opacity: 0; }
+.form.toggle .register { transform: translateY(0); opacity: 1; }
+
+.form h2 { font-weight: 600; font-size: 1.5rem; margin-bottom: 0.8rem; }
+.form p { font-size: 0.8rem; margin-bottom: 1.8rem; }
+
+.form .input { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.9rem; width: 100%; }
+.form .input label { font-size: 0.7rem; font-weight: 600; }
+.form .input input { font-size: 0.7rem; outline: none; border: 1px solid var(--primary-color); border-radius: 0.2rem; padding: 0.5rem; }
+
+.form .reminder { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; width: 100%; }
+.form .checkbox-container { font-size: 0.7rem; font-weight: 600; display: flex; align-items: center; gap: 0.2rem; }
+.form .forgot { font-size: 0.7rem; font-weight: 600; color: var(--primary-color); cursor: pointer; }
+
+.form .buttons { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1rem; width: 100%; }
+.form .buttons button {
+    width: 100%; padding: 0.7rem; font-size: 0.8rem; border-radius: 0.5rem;
+    border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+}
+.form .buttons .icon-google { width: 1rem; }
+.form .buttons button:first-child { background-color: var(--primary-color); color: white; }
+.form .buttons button:last-child { background-color: var(--bg-form-color); border: 2px solid var(--border-input-color); }
+
+.form .account { text-align: center; font-size: 0.75rem; }
+.form .account a { color: var(--primary-color); font-weight: bold; text-decoration: none; }
+
+.banner {
+    background-color: var(--bg-banner-color); width: 100%; display: flex;
+    align-items: center; justify-content: center; position: relative; overflow: hidden;
+}
+
+.circle {
+    background-image: url('./icons/AgoraICON.jpeg'); background-size: cover; background-position: center;
+    width: 18rem; height: 18rem; border-radius: 50%; z-index: 1; animation: circleEntrance 1.2s ease-out forwards;
+}
+
+.circle-2 {
+    width: 16rem; height: 16rem; background-color: rgba(255, 255, 255, 0.2); border-radius: 50%;
+    position: absolute; z-index: 2; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    clip-path: inset(50% 0 0 0); transition: clip-path 0.8s ease-in-out;
+}
+.banner.toggle .circle-2 { clip-path: inset(0 0 50% 0); }
+
+@keyframes circleEntrance {
+    from { opacity: 0; transform: scale(0.8) translateY(20px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@media(max-width:1088px) {
+    .container { flex-direction: column; height: auto; width: 90%; }
+    .container .form-container { order: 2; padding: 2rem 1.2rem; }
+    .form-top, .form-bot { display: none; }
+    .container .banner { order: 1; height: 12rem; background-color: transparent; }
+    .circle { width: 6rem; height: 6rem; }
+    .circle-2 { width: 8rem; height: 8rem; }
+    .form .login, .form .register { width: 100%; position: relative; transform: none; }
+}
+
+/* =========================================
+   3. ESTRUCTURA DEL MURO Y PUBLICADOR
+========================================= */
+.muro-body { align-items: flex-start; padding: 2rem; overflow-y: auto; }
+.muro-container {
+    width: 100%; max-width: 700px; background: var(--bg-form-color);
+    border-radius: 0.8rem; padding: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.muro-container h2 {
+    color: var(--primary-color); margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--bg-banner-color); padding-bottom: 0.5rem;
+}
+
+.publicador {
+    display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;
+    background: var(--bg-banner-color); padding: 1.5rem; border-radius: 0.8rem;
+}
+
+.publicador textarea {
+    width: 100%; height: 100px; padding: 1rem; border: 1px solid var(--border-input-color);
+    border-radius: 0.5rem; font-family: inherit; resize: none; outline: none; transition: 0.3s;
+}
+.publicador textarea:focus { border-color: var(--primary-color); }
+
+.acciones-publicador { display: flex; justify-content: space-between; align-items: center; }
+
+.btn-image {
+    display: flex; align-items: center; gap: 0.5rem; background-color: white; padding: 0.6rem 1rem;
+    border-radius: 0.5rem; cursor: pointer; font-size: 0.8rem; font-weight: 600;
+    color: var(--primary-color); border: 1px solid var(--border-input-color);
+}
+
+.btn-publicar {
+    background-color: var(--primary-color); color: white; border: none; padding: 0.7rem 1.5rem;
+    border-radius: 0.5rem; cursor: pointer; font-weight: 600; transition: background 0.3s;
+}
+.btn-publicar:hover { filter: brightness(1.2); }
+
+/* =========================================
+   4. FEED Y POSTS
+========================================= */
+.feed { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.post {
+    background: white; padding: 1.2rem; border-radius: 0.8rem;
+    border: 1px solid var(--border-input-color); box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.post-header { font-weight: 700; font-size: 0.85rem; color: var(--primary-color); margin-bottom: 0.8rem; }
+.post-body { font-size: 0.95rem; color: #333; line-height: 1.5; margin-bottom: 1rem; }
+
+/* Menú 3 puntos */
+.menu-container { position: relative; }
+.btn-menu-trigger { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #666; padding: 0 5px; line-height: 1; }
+
+.menu-dropdown {
+    display: none; position: absolute; right: 0; top: 25px; background: white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15); border-radius: 8px; z-index: 100;
+    min-width: 170px; border: 1px solid #eee;
+}
+.menu-dropdown.show { display: block; animation: fadeInSlide 0.2s ease-out; }
+.menu-dropdown button {
+    width: 100%; padding: 12px 15px; border: none; background: none; text-align: left;
+    font-size: 0.8rem; cursor: pointer; color: #333; transition: background 0.2s;
+}
+.menu-dropdown button:hover { background: #f8f9fa; }
+.menu-dropdown .menu-borrar { color: var(--danger-color); border-top: 1px solid #eee; }
+
+/* Insignias (Mod, Disponible, Vendido) */
+.badge-mod {
+    background-color: #7c3aed; 
+    color: white; 
+    font-size: 0.6rem; 
+    font-weight: bold;
+    padding: 2px 6px; 
+    border-radius: 4px; 
+    text-transform: uppercase; 
+    letter-spacing: 0.5px; 
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    display: inline-block; /* Evita que se comporte como bloque */
+    width: fit-content; /* Obliga a la insignia a medir solo lo que mide su texto */
+    margin-bottom: 4px; /* Un pequeño margen por si la pones arriba del nombre */
+}
+
+.badge {
+    display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px;
+    font-size: 0.65rem; font-weight: 800; text-transform: uppercase; margin-bottom: 0.5rem;
+}
+.disponible { background-color: #D1FAE5; color: #065F46; } 
+.vendido { background-color: #FEE2E2; color: #991B1B; }
+
+.post.post-vendido { opacity: 0.6; filter: grayscale(40%); transition: all 0.3s ease; border: 1px dashed #991B1B; }
+.post.post-vendido:hover { opacity: 0.85; filter: grayscale(0%); }
+
+/* =========================================
+   5. GRID DE IMÁGENES Y MODAL (NUEVO)
+========================================= */
+.image-grid {
+    display: grid;
+    gap: 5px;
+    margin-bottom: 1rem;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    border: 1px solid var(--bg-banner-color);
+}
+.image-grid img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; transition: 0.2s; }
+.image-grid img:hover { filter: brightness(0.9); }
+
+/* Layouts según cantidad de fotos */
+.grid-1 { grid-template-columns: 1fr; max-height: 400px; }
+.grid-2 { grid-template-columns: 1fr 1fr; height: 250px; }
+.grid-3 { grid-template-columns: 1fr 1fr; grid-template-rows: 150px 150px; }
+.grid-3 img:first-child { grid-column: span 2; }
+.grid-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 150px 150px; }
+.grid-more { grid-template-columns: 1fr 1fr; grid-template-rows: 150px 150px; position: relative; }
+.more-photos-overlay {
+    position: absolute; bottom: 0; right: 0; background: rgba(0,0,0,0.6); color: white;
+    display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; pointer-events: none;
+}
+
+/* Modal de imágenes */
+.image-modal {
+    display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.9); align-items: center; justify-content: center; flex-direction: column;
+}
+.image-modal.show { display: flex; animation: fadeInSlide 0.3s ease; }
+.modal-content { max-width: 90%; max-height: 80vh; object-fit: contain; border-radius: 4px; }
+.modal-close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; }
+.modal-nav {
+    display: flex; gap: 20px; margin-top: 15px;
+}
+.modal-nav button {
+    background: rgba(255,255,255,0.2); color: white; border: none; padding: 10px 20px;
+    cursor: pointer; border-radius: 5px; font-size: 1rem; transition: 0.3s;
+}
+.modal-nav button:hover { background: rgba(255,255,255,0.4); }
+
+/* =========================================
+   6. SECCIÓN COMENTARIOS
+========================================= */
+.seccion-comentarios { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee; }
+.comentario-item { background: #f1f2f6; padding: 0.5rem 0.8rem; border-radius: 0.5rem; font-size: 0.8rem; margin-bottom: 0.5rem; color: #333; }
+.post-vendido .comentario-item { background: #f8f9fa; opacity: 0.9; }
+
+.input-comentario { display: flex; gap: 0.5rem; margin-top: 0.8rem; }
+.input-comentario input { flex: 1; padding: 0.4rem; border: 1px solid var(--border-input-color); border-radius: 0.3rem; font-size: 0.8rem; }
+.input-comentario button { background: var(--primary-color); color: white; border: none; padding: 0.3rem 0.8rem; border-radius: 0.3rem; cursor: pointer; font-size: 0.8rem; }
+
+.btn-ver-comentarios { background: none; border: none; color: #666; font-size: 0.8rem; font-weight: 600; cursor: pointer; padding: 0.5rem 0; display: block; transition: color 0.2s; }
+.btn-ver-comentarios:hover { color: var(--primary-color); text-decoration: underline; }
+
+.lista-comentarios { max-height: 0; overflow: hidden; transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; gap: 0.5rem; }
+.lista-comentarios.abierto { max-height: 500px; overflow-y: auto; padding-bottom: 0.5rem; }
+.lista-comentarios::-webkit-scrollbar { width: 4px; }
+.lista-comentarios::-webkit-scrollbar-thumb { background: var(--border-input-color); border-radius: 10px; }
+
+/* Botón unificado borrar comentarios */
+.del-com { cursor: pointer; color: var(--danger-color); font-weight: bold; font-size: 1.1rem; line-height: 1; margin-left: 8px; padding: 0 4px; opacity: 0.5; transition: 0.2s; }
+.del-com:hover { opacity: 1; background-color: #ffeaea; border-radius: 4px; }
+
+/* =========================================
+   7. EDICIÓN (POSTS Y COMENTARIOS)
+========================================= */
+.edit-textarea { width: 100%; min-height: 80px; padding: 10px; border: 2px solid var(--primary-color); border-radius: 8px; font-family: inherit; font-size: 0.9rem; resize: vertical; outline: none; margin-bottom: 10px; }
+.com-actions { display: flex; gap: 8px; align-items: center; }
+.edit-com-btn { font-size: 0.65rem; color: var(--primary-color); cursor: pointer; text-decoration: underline; opacity: 0.7; }
+.edit-com-btn:hover { opacity: 1; }
+.edit-com-input { font-size: 0.8rem; padding: 2px 5px; border: 1px solid #ddd; border-radius: 4px; width: 70%; }
+.btn-save-com, .btn-cancel-com { background: none; border: none; cursor: pointer; font-size: 0.8rem; padding: 0 2px; }
+.btn-save-com { color: var(--success-color); }
+.btn-cancel-com { color: var(--danger-color); }
+
+.label-archivo-verde { display: inline-block; background-color: var(--success-color) !important; color: white !important; padding: 0.6rem 1.2rem; border-radius: 2rem; cursor: pointer; font-size: 0.8rem; font-weight: 700; transition: transform 0.2s, background 0.3s; border: none; margin-bottom: 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+.label-archivo-verde:hover { background-color: #15803d !important; transform: translateY(-1px); }
+
+.edit-preview-box { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
+.foto-edit-wrapper { position: relative; width: 80px; height: 80px; }
+.foto-edit-wrapper img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
+.btn-quitar-foto { position: absolute; top: -5px; right: -5px; background: var(--danger-color); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+
+@keyframes fadeInSlide {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* PARTE DE EMANUEL ARRES 
+-- SECCIÓN DE BARRA DE BUSQUEDA Y SURGERENCIAS ---- */
+
+.sugerencias {
+    position: absolute;
+    top: 105%; /* Justo debajo del input */
+    left: 0;
+    right: 0;
+    background: rgb(211, 210, 210);
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    z-index: 999;
+    display: none; /* Se oculta si no hay texto */
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #fffdfd;
+}
+
+/* Estilo base de la sugerencia */
+.sugerencia-item {
+    padding: 12px 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s ease; /* Mantiene la suavidad */
+    color: #3c4043; /* Color original */
+}
+
+/* Solo movemos un poco el texto, sin cambiar colores */
+.sugerencia-item:hover {
+    padding-left: 28px; /* Pequeño desplazamiento animado */
+    /* No agregamos background-color ni color nuevo */
+}
+
+.sugerencia-item span {
+    font-size: 1.1rem;
+    opacity: 0.6;
+}
+
+#inputBuscador:focus {
+    /* 1. Cambiamos el color del borde al morado del proyecto */
+    border-color: #613DB7; 
+    
+    /* 2. Añadimos el "resplandor" suave con una sombra exterior */
+    /* Sintaxis: box-shadow: horizontal vertical difuminado spread color; */
+    box-shadow: 0 0 10px rgba(97, 61, 183, 0.5); /* Sombra morada translúcida */
+    
+    /* 3. Quitamos el borde azul por defecto de los navegadores */
+    outline: none;
+    
+    /* 4. Hacemos que la animación sea suave (fade-in) */
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
