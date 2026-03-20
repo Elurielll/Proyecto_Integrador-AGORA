@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agora - Muro de Publicaciones</title>
+    <link rel="stylesheet" href="style.css"> 
+</head>
+<body>
+
+    <div class="muro-container">
+        <h2>Muro de la Comunidad Agora</h2>
+
+        <div class="buscador-wrapper" style="position: relative; margin-bottom: 20px; flex: 2;">
+        <input type="text" id="inputBuscador" placeholder="🔍 Buscar productos..." 
+           style="width: 100%; padding: 15px; border-radius: 25px; border: 1px solid #ccc; outline: none;">
+    
+        <div id="listaSugerencias" class="sugerencias-google"></div>
+    </div>
+
+        
+        <div class="publicador">
+            <textarea id="postContent" placeholder="¿Qué quieres compartir con el equipo?"></textarea>
+            
+            <div id="preview-container" class="edit-preview-box" style="display: none;"></div>
+
+            <div class="acciones-publicador">
+                <label for="postImage" class="btn-image">
+                    <span>📷 Añadir Fotos</span>
+                    <input type="file" id="postImage" accept="image/png, image/jpeg, image/jpg, image/webp" multiple style="display: none;">
+                </label>
+                <button class="btn-publicar" id="btnPublish">Publicar</button>
+            </div>
+        </div>
+
+        <div class="feed" id="posts">
+        </div>
+    </div>
+
+    <div id="imageModal" class="image-modal">
+        <span class="modal-close" id="closeModal">&times;</span>
+        <img class="modal-content" id="imgModalFull">
+        <div class="modal-nav" id="modalNav" style="display: none;">
+            <button id="btnPrevImg">◀ Anterior</button>
+            <button id="btnNextImg">Siguiente ▶</button>
+        </div>
+    </div>
+
+    <script src="muro.js?v=2"></script>
+</body>
+</html>
