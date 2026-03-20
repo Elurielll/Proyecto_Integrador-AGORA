@@ -5,6 +5,7 @@ Desarrollo de una plataforma web de **compraventa de productos nuevos o usados**
 
 El proyecto fue desarrollado en **Visual Studio Code** utilizando principalmente **JavaScript, HTML y CSS**.
 
+
 ---
 
 ## 📸 Vista Previa  
@@ -18,6 +19,7 @@ El proyecto fue desarrollado en **Visual Studio Code** utilizando principalmente
 ### ⚙️ Panel de Administración
 <img width="1570" height="765" src="https://github.com/user-attachments/assets/fe06c6a4-32e2-4e85-9bcc-ab61facee112" />
 
+
 ---
 
 ## ✨ Características Principales  
@@ -25,6 +27,7 @@ El proyecto fue desarrollado en **Visual Studio Code** utilizando principalmente
 - ✅ **Interfaz intuitiva:** Fácil de usar tanto en web como en dispositivos móviles  
 - ✅ **Experiencia fluida:** Ideal para compradores y vendedores (publicaciones y chat)  
 - ✅ **Enfoque local:** Acceso rápido a productos dentro de la misma localidad  
+
 
 ---
 
@@ -37,6 +40,7 @@ El proyecto fue desarrollado en **Visual Studio Code** utilizando principalmente
 - 🗄 **Base de Datos:** Almacenamiento local / en memoria  
 - 🔌 **Herramientas:** npm, Fetch API, LocalStorage  
 
+
 ---
 
 ## 🚀 Tecnologías (Visual)
@@ -44,6 +48,7 @@ El proyecto fue desarrollado en **Visual Studio Code** utilizando principalmente
 <p align="center">
   <img src="https://skillicons.dev/icons?i=html,css,js,nodejs,express" />
 </p>
+
 
 ---
 
@@ -66,6 +71,7 @@ El proyecto fue desarrollado en **Visual Studio Code** utilizando principalmente
 ## ⭐ Apoya el proyecto  
 
 Si te gusta este proyecto, no olvides darle una estrella en GitHub ⭐  
+
 
 ---
 
