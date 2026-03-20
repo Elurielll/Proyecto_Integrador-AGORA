@@ -434,3 +434,87 @@ function moverVisor(direccion) {
 }
 
 cargarPosts();
+
+// =============================================
+// Menú de Categorías - Kevin
+// =============================================
+let listElements = document.querySelectorAll('.list-categorias__button--click');
+
+listElements.forEach(listElement => {
+    listElement.addEventListener('click', () => {
+        listElement.classList.toggle('arrow');
+        let height = 0;
+        let menu = listElement.nextElementSibling;
+        if (menu.clientHeight == 0) {
+            height = menu.scrollHeight;
+        }
+        menu.style.height = `${height}px`;
+    });
+});
+
+// =============================================
+// Modal de Ubicación - Kevin
+// =============================================
+const estados = [
+    "Aguascalientes", "Baja California", "Baja California Sur",
+    "Campeche", "Chiapas", "Chihuahua", "Ciudad de México",
+    "Coahuila", "Colima", "Durango", "Guanajuato", "Guerrero",
+    "Hidalgo", "Jalisco", "Estado de México", "Michoacán",
+    "Morelos", "Nayarit", "Nuevo León", "Oaxaca", "Puebla",
+    "Querétaro", "Quintana Roo", "San Luis Potosí", "Sinaloa",
+    "Sonora", "Tabasco", "Tamaulipas", "Tlaxcala", "Veracruz",
+    "Yucatán", "Zacatecas"
+];
+
+const btnUbicacion = document.getElementById('btnUbicacion');
+const btnCerrarModal = document.getElementById('btnCerrarModal');
+const modalUbicacion = document.getElementById('modalUbicacion');
+const inputEstado = document.getElementById('inputEstado');
+const listaEstados = document.getElementById('listaEstados');
+const btnGuardar = document.getElementById('btnGuardarUbicacion');
+
+// Abrir modal
+btnUbicacion.addEventListener('click', () => {
+    modalUbicacion.classList.add('activo');
+});
+
+// Cerrar modal con X
+btnCerrarModal.addEventListener('click', () => {
+    modalUbicacion.classList.remove('activo');
+});
+
+// Cerrar si click fuera del modal
+modalUbicacion.addEventListener('click', (e) => {
+    if (e.target === modalUbicacion) {
+        modalUbicacion.classList.remove('activo');
+    }
+});
+
+// Filtrar estados en tiempo real
+inputEstado.addEventListener('input', () => {
+    const texto = inputEstado.value.toLowerCase();
+    listaEstados.style.display = texto ? 'block' : 'none';
+    listaEstados.innerHTML = '';
+
+    const filtrados = estados.filter(e => e.toLowerCase().includes(texto));
+    filtrados.forEach(estado => {
+        const li = document.createElement('li');
+        li.textContent = estado;
+        li.addEventListener('click', () => {
+            inputEstado.value = estado;
+            listaEstados.style.display = 'none';
+        });
+        listaEstados.appendChild(li);
+    });
+});
+
+// Guardar ubicación
+btnGuardar.addEventListener('click', () => {
+    const estado = inputEstado.value;
+    if (!estados.includes(estado)) {
+        alert('Por favor selecciona un estado válido de la lista');
+        return;
+    }
+    btnUbicacion.textContent = '📍 ' + estado;
+    modalUbicacion.classList.remove('activo');
+});

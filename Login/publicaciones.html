@@ -8,26 +8,92 @@
 </head>
 <body>
 
-    <div class="muro-container">
-        <h2>Muro de la Comunidad Agora</h2>
-        
-        <div class="publicador">
-            <textarea id="postContent" placeholder="¿Qué quieres compartir con el equipo?"></textarea>
-            
-            <div id="preview-container" class="edit-preview-box" style="display: none;"></div>
+    <div class="pagina-container">
 
-            <div class="acciones-publicador">
-                <label for="postImage" class="btn-image">
-                    <span>📷 Añadir Fotos</span>
-                    <input type="file" id="postImage" accept="image/png, image/jpeg, image/jpg, image/webp" multiple style="display: none;">
-                </label>
-                <button class="btn-publicar" id="btnPublish">Publicar</button>
+        <!-- Columna izquierda: nav + botón ubicación - Kevin -->
+        <div class="columna-izquierda">
+
+            <!-- Botón de Categorías - Kevin -->
+            <nav class="nav-categorias">
+                <ul class="list-categorias">
+                    <li class="list-categorias__item list-categorias__item--click">
+                        <div class="list-categorias__button list-categorias__button--click">
+                            <img src="icons/category.svg" class="list-categorias__img">
+                            <a href="#" class="nav-categorias__link">Categorias</a>
+                            <img src="icons/arrow.svg" class="list-categorias__arrow">
+                        </div>
+                        <ul class="list-categorias__show">
+                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Vehiculos</a></li>
+                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Supermercado</a></li>
+                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Tecnologia</a></li>
+                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Propiedades en Alquiler</a></li>
+                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Deporte y Fitness</a></li>
+                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Para el Hogar</a></li>
+                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Entretenimiento</a></li>
+                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Indumentaria</a></li>
+                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Musica</a></li>
+                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Jardineria</a></li>
+                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Jugueteria</a></li>
+                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Herramientas y Materiales</a></li>
+                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Pasatiempos</a></li>
+                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Aire Libre</a></li>
+                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Productos para Mascotas</a></li>
+                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Viviendas en Venta</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- Botón de ubicación - Kevin -->
+            <div class="ubicacion-container">
+                <button class="btn-ubicacion" id="btnUbicacion">
+                    📍 Seleccionar Estado
+                </button>
+            </div>
+
+        </div> 
+
+        <!-- Muro principal -->
+        <div class="muro-wrapper">
+            <div class="muro-container">
+                <h2>Muro de la Comunidad Agora</h2>
+                
+                <div class="publicador">
+                    <textarea id="postContent" placeholder="¿Qué quieres compartir con el equipo?"></textarea>
+                    
+                    <div id="preview-container" class="edit-preview-box" style="display: none;"></div>
+
+                    <div class="acciones-publicador">
+                        <label for="postImage" class="btn-image">
+                            <span>📷 Añadir Fotos</span>
+                            <input type="file" id="postImage" accept="image/png, image/jpeg, image/jpg, image/webp" multiple style="display: none;">
+                        </label>
+                        <button class="btn-publicar" id="btnPublish">Publicar</button>
+                    </div>
+                </div>
+
+                <div class="feed" id="posts">
+                </div>
             </div>
         </div>
 
-        <div class="feed" id="posts">
+        <!-- Modal de ubicación - Kevin -->
+        <div class="modal-overlay" id="modalUbicacion">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3>Cambiar ubicación</h3>
+                    <button class="modal-cerrar" id="btnCerrarModal">✕</button>
+                </div>
+                <div class="modal-body">
+                    <label>Estado</label>
+                    <input type="text" id="inputEstado" placeholder="Ej: Colima">
+                    <ul id="listaEstados"></ul>
+                    <button class="btn-guardar" id="btnGuardarUbicacion">Guardar</button>
+                </div>
+            </div>
         </div>
-    </div>
+
+    </div> <!-- cierre pagina-container -->
 
     <div id="imageModal" class="image-modal">
         <span class="modal-close" id="closeModal">&times;</span>
