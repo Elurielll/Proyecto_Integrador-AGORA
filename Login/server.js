@@ -126,6 +126,44 @@ app.post('/api/actualizar-perfil', (req, res) => {
     }
 });
 
+// --- ACTUALIZAR FOTO DE PERFIL ---
+app.post('/api/actualizar-foto-perfil', upload.single('fotoPerfil'), (req, res) => {
+    const { nombreUsuario } = req.body;
+    const archivoFoto = req.file;
+
+    if (!archivoFoto) {
+        return res.status(400).json({ message: "No se subió ninguna imagen" });
+    }
+
+    const usuario = usuariosRegistrados.find(u => u.nombre === nombreUsuario);
+
+    if (usuario) {
+        // OPCIONAL PERO RECOMENDADO: Borramos la foto anterior del disco duro
+        // (Siempre y cuando no sea la imagen por defecto que les pusiste al registrarse)
+        if (usuario.fotoPerfil && usuario.fotoPerfil !== "/icons/AgoralCON.jpeg" && usuario.fotoPerfil.startsWith("/uploads/")) {
+            eliminarArchivos([usuario.fotoPerfil]);
+        }
+
+        // Creamos la ruta de la nueva imagen
+        const nuevaRuta = `/uploads/${archivoFoto.filename}`;
+        
+        // Actualizamos el perfil en nuestra base de datos en memoria
+        usuario.fotoPerfil = nuevaRuta;
+        
+        // Lo registramos en tu excelente sistema de logs
+        registrarEvento(nombreUsuario, usuario.role || "user", "Cambio de Foto de Perfil", `Nueva imagen: ${archivoFoto.filename}`);
+        
+        res.status(200).json({ 
+            message: "Foto actualizada exitosamente", 
+            nuevaRuta: nuevaRuta 
+        });
+    } else {
+        // Si por alguna razón el usuario no existe, borramos el archivo que multer acaba de guardar
+        eliminarArchivos([`/uploads/${archivoFoto.filename}`]);
+        res.status(404).json({ message: "Usuario no encontrado" });
+    }
+});
+
 // --- EL RESTO DE TUS RUTAS SE MANTIENEN IGUAL ---
 
 app.get('/admin-full-stats', (req, res) => {
