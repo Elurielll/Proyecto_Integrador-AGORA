@@ -25,11 +25,13 @@
                         </div>
                         
                         <ul class="list-categorias__show">
-                            <li><a href="#" class="nav-categorias_link--inside">Electrónica</a></li>
-                            <li><a href="#" class="nav-categorias_link--inside">Hogar y Muebles</a></li>
-                            <li><a href="#" class="nav-categorias_link--inside">Vehículos</a></li>
-                            <li><a href="#" class="nav-categorias_link--inside">Inmuebles</a></li>
-                            <li><a href="#" class="nav-categorias_link--inside">Servicios</a></li>
+                            <li><a href="#" class="nav-categorias_link--inside" data-categoria="todas">Mostrar Todas</a></li>
+                            <li><a href="#" class="nav-categorias_link--inside" data-categoria="Electrónica">Electrónica</a></li>
+                            <li><a href="#" class="nav-categorias_link--inside" data-categoria="Hogar y Muebles">Hogar y Muebles</a></li>
+                            <li><a href="#" class="nav-categorias_link--inside" data-categoria="Vehículos">Vehículos</a></li>
+                            <li><a href="#" class="nav-categorias_link--inside" data-categoria="Ropa">Ropa</a></li>
+                            <li><a href="#" class="nav-categorias_link--inside" data-categoria="Accesorios">Accesorios</a></li>
+                            <li><a href="#" class="nav-categorias_link--inside" data-categoria="Servicios">Servicios</a></li>
                         </ul>
                     </li>
                 </ul>
@@ -48,51 +50,95 @@
             </div>
 
             <div class="muro-container">
-                <h2>Muro de la Comunidad Agora</h2>
+                <div class="muro-header">
+                    <img src="./icons/AgoraICON.jpeg" alt="Logo Agora" class="logo-mini">
+                    <h2>Agora</h2>
+                </div>
                 
-                <div class="publicador">
-                    <div class="input-group-row">
-                        <div class="input-wrapper">
-                            <input type="text" id="postTitle" placeholder="Título" maxlength="30">
-                            <span class="error-text" id="err-title">Campo obligatorio</span>
-                        </div>
-                        <div class="input-wrapper">
-                            <input type="number" id="postPrice" placeholder="Precio ($)">
-                            <span class="error-text" id="err-price">Campo obligatorio</span>
-                        </div>
-                    </div>
+                <div class="buscador-wrapper" style="position: relative; margin-bottom: 20px; width: 100%;">
+                    <input type="text" id="inputBuscador" placeholder="🔍 Buscar productos o usuarios..." 
+                           style="width: 100%; padding: 15px; border-radius: 25px; border: 1px solid #ccc; outline: none; box-sizing: border-box;">
+                    <div id="listaSugerencias" class="sugerencias-google"></div>
+                </div>
+                
+                <div class="crear-publicacion-trigger" id="btnAbrirModalPublicar">
+                    <button>¿Que vamos a publicar hoy?</button>
+                </div>
 
-                    <div class="input-group-row">
-                        <div class="input-wrapper">
-                            <select id="postEstado">
-                                <option value="">Selecciona un Estado...</option>
-                                </select>
-                            <span class="error-text" id="err-estado">Campo obligatorio</span>
-                        </div>
-                        <div class="input-wrapper">
-                            <select id="postMunicipio" disabled>
-                                <option value="">Selecciona un Municipio...</option>
-                            </select>
-                            <span class="error-text" id="err-municipio">Campo obligatorio</span>
-                        </div>
-                    </div>
+                <div id="modalPublicacion" class="modal-overlay" style="display: none;">
+                    <div class="modal-content">
+                        <span class="btn-cerrar-modal" id="btnCerrarModalPublicar">&times;</span>
+                        <h3 style="margin-top: 0; color: #613DB7; text-align: center; margin-bottom: 20px;">Crear Publicación</h3>
 
-                    <div class="input-wrapper">
-                        <textarea id="postContent" placeholder="Describe tu artículo..." maxlength="300"></textarea>
-                        <div class="textarea-footer">
-                            <span class="error-text" id="err-content">Campo obligatorio</span>
-                            <span class="char-counter"><span id="charCount">0</span> / 300</span>
-                        </div>
-                    </div>
-                    
-                    <div id="preview-container" class="edit-preview-box" style="display: none;"></div>
+                        <div class="publicador" style="box-shadow: none; padding: 0; border: none; background: transparent;">
+                            <div class="input-group-row">
+                                <div class="input-wrapper">
+                                    <input type="text" id="postTitle" placeholder="Título" maxlength="30">
+                                    <span class="error-text" id="err-title">Campo obligatorio</span>
+                                </div>
+                                <div class="input-wrapper">
+                                    <input type="text" id="postPrice" placeholder="Precio ($)" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                    <span class="error-text" id="err-price">Campo obligatorio</span>
+                                </div>
+                            </div>
 
-                    <div class="acciones-publicador">
-                        <label for="postImage" class="btn-image">
-                            <span>📷 Añadir Fotos</span>
-                            <input type="file" id="postImage" accept="image/png, image/jpeg, image/jpg, image/webp" multiple style="display: none;">
-                        </label>
-                        <button class="btn-publicar" id="btnPublish">Publicar</button>
+                            <div class="input-group-row">
+                                <div class="input-wrapper">
+                                    <select id="postEstado">
+                                        <option value="">Selecciona un Estado...</option>
+                                    </select>
+                                    <span class="error-text" id="err-estado">Campo obligatorio</span>
+                                </div>
+                                <div class="input-wrapper">
+                                    <select id="postMunicipio" disabled>
+                                        <option value="">Selecciona un Municipio...</option>
+                                    </select>
+                                    <span class="error-text" id="err-municipio">Campo obligatorio</span>
+                                </div>
+                            </div>
+
+                            <div class="input-group-row" style="margin-bottom: 15px;">
+                                <div class="input-wrapper" style="width: 100%;">
+                                    <select id="postCategoria" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-input-color); font-family: inherit; font-size: 0.95rem; color: #334155; outline: none; transition: border-color 0.2s;">
+                                        <option value="">Selecciona una Categoría...</option>
+                                        <option value="Electrónica">Electrónica</option>
+                                        <option value="Hogar y Muebles">Hogar y Muebles</option>
+                                        <option value="Vehículos">Vehículos</option>
+                                        <option value="Ropa">Ropa</option>
+                                        <option value="Accesorios">Accesorios</option>
+                                        <option value="Servicios">Servicios</option>
+                                    </select>
+                                    <span class="error-text" id="err-categoria">Campo obligatorio</span>
+                                </div>
+                                <div class="input-wrapper" style="width: 100%;">
+                                    <select id="postCondicion" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-input-color); font-family: inherit; font-size: 0.95rem; color: #334155; outline: none; transition: border-color 0.2s;">
+                                        <option value="">Condición...</option>
+                                        <option value="Nuevo">✨ Nuevo</option>
+                                        <option value="Buen estado">👍 Buen estado</option>
+                                        <option value="Usado">📦 Usado</option>
+                                    </select>
+                                    <span class="error-text" id="err-condicion" style="display: none; color: #ef4444; font-size: 0.8rem; margin-top: 4px;">Campo obligatorio</span>
+                                </div>
+                            </div>
+
+                            <div class="input-wrapper">
+                                <textarea id="postContent" placeholder="Describe tu artículo..." maxlength="300"></textarea>
+                                <div class="textarea-footer">
+                                    <span class="error-text" id="err-content">Campo obligatorio</span>
+                                    <span class="char-counter"><span id="charCount">0</span> / 300</span>
+                                </div>
+                            </div>
+                            
+                            <div id="preview-container" class="edit-preview-box" style="display: none;"></div>
+
+                            <div class="acciones-publicador">
+                                <label for="postImage" class="btn-image">
+                                    <span>📷 Añadir Fotos</span>
+                                    <input type="file" id="postImage" accept="image/png, image/jpeg, image/jpg, image/webp" multiple style="display: none;">
+                                </label>
+                                <button class="btn-publicar" id="btnPublish">Publicar</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="feed" id="posts">
@@ -122,14 +168,148 @@
     <div class="modal-overlay-ubi" id="modalUbicacion">
         <div class="modal-ubi">
             <div class="modal-header-ubi">
-                <h3>Selecciona tu estado</h3>
+                <h3>Selecciona tu estado y municipio</h3>
                 <button class="modal-cerrar-ubi" id="btnCerrarModalUbi">×</button>
             </div>
             <div class="modal-body-ubi">
-                <label for="inputEstado">Estado de la República:</label>
-                <input type="text" id="inputEstado" placeholder="Ej. Jalisco, Nuevo León...">
-                <ul id="listaEstados"></ul>
+                <label for="inputEstado" style="display: block; margin-bottom: 8px; font-weight: 500; color: #1e293b;">Estado de la República:</label>
+                <select id="inputEstado" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; color: #334155; background-color: white; outline: none; cursor: pointer; margin-bottom: 20px;">
+                    <option value="">-- Todos los Estados --</option>
+                    <option value="Aguascalientes">Aguascalientes</option>
+                    <option value="Baja California">Baja California</option>
+                    <option value="Baja California Sur">Baja California Sur</option>
+                    <option value="Campeche">Campeche</option>
+                    <option value="Chiapas">Chiapas</option>
+                    <option value="Chihuahua">Chihuahua</option>
+                    <option value="Ciudad de México">Ciudad de México</option>
+                    <option value="Coahuila">Coahuila</option>
+                    <option value="Colima">Colima</option>
+                    <option value="Durango">Durango</option>
+                    <option value="Estado de México">Estado de México</option>
+                    <option value="Guanajuato">Guanajuato</option>
+                    <option value="Guerrero">Guerrero</option>
+                    <option value="Hidalgo">Hidalgo</option>
+                    <option value="Jalisco">Jalisco</option>
+                    <option value="Michoacán">Michoacán</option>
+                    <option value="Morelos">Morelos</option>
+                    <option value="Nayarit">Nayarit</option>
+                    <option value="Nuevo León">Nuevo León</option>
+                    <option value="Oaxaca">Oaxaca</option>
+                    <option value="Puebla">Puebla</option>
+                    <option value="Querétaro">Querétaro</option>
+                    <option value="Quintana Roo">Quintana Roo</option>
+                    <option value="San Luis Potosí">San Luis Potosí</option>
+                    <option value="Sinaloa">Sinaloa</option>
+                    <option value="Sonora">Sonora</option>
+                    <option value="Tabasco">Tabasco</option>
+                    <option value="Tamaulipas">Tamaulipas</option>
+                    <option value="Tlaxcala">Tlaxcala</option>
+                    <option value="Veracruz">Veracruz</option>
+                    <option value="Yucatán">Yucatán</option>
+                    <option value="Zacatecas">Zacatecas</option>
+                </select>
+
+                <div id="contenedorMunicipio" style="display: none; margin-bottom: 20px;">
+                    <label for="inputMunicipio" style="display: block; margin-bottom: 8px; font-weight: 500; color: #1e293b;">Municipio (Opcional):</label>
+                    <select id="inputMunicipio" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; color: #334155; background-color: white; outline: none; cursor: pointer;">
+                        <option value="">-- Todos los municipios --</option>
+                    </select>
+                </div>
+
                 <button class="btn-guardar" id="btnGuardarUbicacion">Guardar Ubicación</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="fb-modal" class="fb-modal-overlay">
+        <div class="fb-modal-container">
+            <button class="fb-close-btn" id="fb-close-btn">&times;</button>
+            <div class="fb-modal-image-section">
+                <button id="fb-btn-prev" class="fb-nav-arrow">❮</button>
+                <img id="fb-modal-img" src="" alt="Visor de imagen ampliada">
+                <button id="fb-btn-next" class="fb-nav-arrow">❯</button>
+            </div>
+            <div class="fb-modal-sidebar">
+                <div class="fb-sidebar-header">
+                    <h3>Comentarios</h3>
+                </div>
+                <div class="fb-sidebar-comments" id="fb-sidebar-comments">
+                </div>
+                <div class="fb-sidebar-input">
+                    <input type="text" id="fb-comment-input" placeholder="Escribe un comentario...">
+                    <button id="fb-comment-btn">Enviar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+   <div id="modal-editar" class="modal-editar-overlay">
+        <div class="modal-editar-caja">
+            <h2>Editar Publicación</h2>
+            <input type="hidden" id="edit-post-id">
+            
+            <label for="edit-post-title">Título</label>
+            <input type="text" id="edit-post-title" maxlength="30">
+            
+            <label for="edit-post-price">Precio ($)</label>
+            <input type="number" id="edit-post-price" min="0" oninput="this.value = Math.abs(this.value)">
+            
+            <label for="edit-post-categoria">Categoría</label>
+            <select id="edit-post-categoria">
+                <option value="">Selecciona una Categoría...</option>
+                <option value="Electrónica">Electrónica</option>
+                <option value="Hogar y Muebles">Hogar y Muebles</option>
+                <option value="Vehículos">Vehículos</option>
+                <option value="Ropa">Ropa</option>
+                <option value="Accesorios">Accesorios</option>
+                <option value="Servicios">Servicios</option>
+            </select>
+
+            <label for="edit-post-condicion">Condición</label>
+<select id="edit-post-condicion">
+    <option value="">Condición...</option>
+    <option value="Nuevo">✨ Nuevo</option>
+    <option value="Buen estado">👍 Buen estado</option>
+    <option value="Usado">📦 Usado</option>
+</select>
+
+            <label for="edit-post-estado">Estado (Ubicación)</label>
+            <select id="edit-post-estado">
+                <option value="">Selecciona un Estado...</option>
+                <option value="Colima">Colima</option>
+                <option value="Jalisco">Jalisco</option>
+            </select>
+
+            <label for="edit-post-municipio">Municipio</label>
+            <select id="edit-post-municipio" disabled>
+                <option value="">Selecciona un Municipio...</option>
+            </select>
+
+            <label for="edit-post-status">Estado de la venta</label>
+            <select id="edit-post-status">
+                <option value="disponible">Disponible</option>
+                <option value="en-trato">En trato</option>
+                <option value="vendido">Vendido</option>
+            </select>
+            
+            <label for="edit-post-content">Descripción</label>
+            <textarea id="edit-post-content" rows="4" maxlength="300"></textarea>
+            
+            <div style="margin-top: 15px; text-align: left;">
+                <label style="font-weight: bold; font-size: 0.9rem;">Imágenes actuales:</label>
+                <div id="edit-preview-existentes" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; margin-top: 5px;"></div>
+                
+                <label style="font-weight: bold; font-size: 0.9rem; margin-top: 10px; display: block;">Añadir nuevas imágenes:</label>
+                <label for="edit-post-images" style="display: flex; align-items: center; justify-content: center; gap: 8px; background-color: #f1f5f9; border: 2px dashed #cbd5e1; color: #475569; padding: 12px; border-radius: 8px; cursor: pointer; margin-top: 8px; font-size: 0.9rem; transition: background-color 0.2s;">
+                    <span>📷 Seleccionar fotos...</span>
+                    <input type="file" id="edit-post-images" accept="image/*" multiple style="display: none;">
+                </label>
+                <div id="edit-preview-nuevas" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;"></div>
+            </div>
+            
+            <div class="modal-editar-acciones">
+                <button class="btn-guardar" id="btn-cancelar-edicion" style="background: #cbd5e1; color: #334155;">Cancelar</button>
+                <button class="btn-guardar" id="btn-guardar-edicion">Guardar Cambios</button>
             </div>
         </div>
     </div>
