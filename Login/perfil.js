@@ -90,8 +90,10 @@ async function cargarDatosPerfil() {
             btnEditar.style.display = "none";
             btnChatear.style.display = "inline-block";
 
+            // ¡NUEVO CÓDIGO DEL BOTÓN DE CHAT! 🚀
             btnChatear.onclick = () => {
-                alert("¡Próximamente! Aquí se abrirá el chat con " + nombrePerfil + " que está programando mi compañero.");
+                // Redirige a chat.html pasándole el nombre del usuario por la URL
+                window.location.href = `chat.html?usuario=${encodeURIComponent(nombrePerfil)}`;
             };
         }
 

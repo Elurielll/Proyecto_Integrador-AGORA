@@ -4,6 +4,12 @@ const multer = require('multer');
 const fs = require('fs'); 
 const app = express();
 
+// ==========================================
+// 🚀 1. NUEVAS HERRAMIENTAS PARA EL CHAT
+// ==========================================
+const http = require('http').Server(app);
+const io = require('socket.io')(http);
+
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) { fs.mkdirSync(uploadDir); }
 
@@ -37,7 +43,6 @@ function eliminarArchivos(listaRutas) {
 }
 
 function registrarEvento(usuario, rol, accion, detalles = "") {
-    // Formato de fecha limpio para la terminal del servidor
     const evento = { fecha: new Date().toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }), usuario, rol, accion, detalles };
     logEventos.push(evento);
     if (logEventos.length > 500) logEventos.shift(); 
@@ -84,35 +89,24 @@ app.get('/api/publicaciones/usuario/:nombre', (req, res) => {
 });
 
 app.post('/api/actualizar-perfil', (req, res) => {
-    // 1. Ahora sí recibimos el 'nuevoNombre'
     const { nombre, nuevoNombre, bio, municipio, estado } = req.body;
     
     const usuario = usuariosRegistrados.find(u => u.nombre === nombre);
     
     if (usuario) {
-        // 2. Si el usuario decidió cambiar su nombre
         if (nuevoNombre && nuevoNombre !== nombre) {
-            
-            // a) Verificamos que nadie más tenga ya ese nombre
             const nombreOcupado = usuariosRegistrados.some(u => u.nombre === nuevoNombre);
             if (nombreOcupado) {
-                // Si ya existe, le mandamos un error 400 (Bad Request)
                 return res.status(400).send("Ese nombre de usuario ya está ocupado.");
             }
-            
-            // b) Si está libre, se lo asignamos a su perfil
             usuario.nombre = nuevoNombre;
-
-            // c) REASIGNACIÓN DE AUTORÍA (Súper importante)
-            // Recorremos todas las publicaciones para actualizar el nombre del autor
             publicaciones.forEach(post => {
                 if (post.autor === nombre) {
-                    post.autor = nuevoNombre; // Actualiza el post
+                    post.autor = nuevoNombre;
                 }
-                // También buscamos si dejó comentarios en otros posts
                 post.comentarios.forEach(comentario => {
                     if (comentario.autor === nombre) {
-                        comentario.autor = nuevoNombre; // Actualiza el comentario
+                        comentario.autor = nuevoNombre;
                     }
                 });
             });
@@ -120,7 +114,6 @@ app.post('/api/actualizar-perfil', (req, res) => {
             registrarEvento(nuevoNombre, usuario.role || "user", "Cambió su nombre de usuario", `De: ${nombre}`);
         }
 
-        // 3. Actualizamos el resto de los datos
         if (bio !== undefined) usuario.bio = bio;
         if (municipio !== undefined) usuario.municipio = municipio;
         if (estado !== undefined) usuario.estado = estado;
@@ -160,7 +153,6 @@ app.post('/track-online', (req, res) => {
 
 // --- PUBLICAR ---
 app.post('/publicar', upload.array('imagenes', 5), (req, res) => {
-    // 1. AQUÍ AGREGAMOS "condicion" a la lista de cosas que recibimos
     const { titulo, precio, estado, municipio, texto, autor, rol, estado_venta, categoria, condicion } = req.body; 
     
     const nuevoPost = {
@@ -171,7 +163,7 @@ app.post('/publicar', upload.array('imagenes', 5), (req, res) => {
         municipio: municipio || '',      
         texto: texto || '', 
         categoria: categoria || 'otros', 
-        condicion: condicion || '', // 2. <-- AQUÍ SE GUARDA LA CONDICIÓN
+        condicion: condicion || '',
         autor: autor || "Anónimo", 
         rol: rol || "user", 
         estado_venta: estado_venta || 'disponible', 
@@ -235,10 +227,9 @@ app.post('/borrar-comentario', (req, res) => {
 });
 
 app.post('/editar-post', upload.array('imagenes', 5), (req, res) => {
-    // 1. Desempacamos todos los datos, incluyendo los nuevos
     const { 
         postId, texto, titulo, precio, estado_venta, nombreUsuario, role, imagenesRestantes,
-        condicion, categoria, estado, municipio // <-- ¡Agregados aquí!
+        condicion, categoria, estado, municipio
     } = req.body;
     
     const post = publicaciones.find(p => p.id == postId);
@@ -246,16 +237,13 @@ app.post('/editar-post', upload.array('imagenes', 5), (req, res) => {
     if (post && (post.autor === nombreUsuario || role === 'admin_server')) {
         const fotosQueSeQuedan = Array.isArray(imagenesRestantes) ? imagenesRestantes : (imagenesRestantes ? [imagenesRestantes] : []);
         
-        // Asumiendo que eliminarArchivos es una función que ya tienes definida arriba
         eliminarArchivos(post.imagenes.filter(img => !fotosQueSeQuedan.includes(img)));
         
-        // 2. Actualizamos la publicación
         post.texto = texto;
         post.titulo = titulo || post.titulo;
         post.precio = precio || post.precio;
         post.estado_venta = estado_venta || post.estado_venta;
         
-        // 👇 Guardamos los campos nuevos 👇
         post.condicion = condicion || post.condicion;
         post.categoria = categoria || post.categoria;
         post.estado = estado || post.estado;
@@ -291,8 +279,31 @@ app.post('/limpiar-servidor', (req, res) => {
     res.status(400).json({ message: "Palabra incorrecta" });
 });
 
+// ==========================================
+// 🚀 2. LÓGICA DEL CHAT (WEBSOCKETS)
+// ==========================================
+io.on('connection', (socket) => {
+    console.log('💬 Usuario conectado al chat: ' + socket.id);
+
+    socket.on('enviar-mensaje', (data) => {
+        io.emit('mostrar-mensaje', {
+            texto: data.texto,
+            id: socket.id,
+            hora: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
+        });
+    });
+
+    socket.on('disconnect', () => {
+        console.log('🚪 Usuario desconectado del chat');
+    });
+});
+
+// ==========================================
+// 🚀 3. INICIO DEL SERVIDOR (FUSIONADO)
+// ==========================================
 const PORT = 3000;
-app.listen(PORT, '0.0.0.0', () => {
+// ¡Cambiamos app por http para que escuche la web y el chat al mismo tiempo!
+http.listen(PORT, '0.0.0.0', () => {
     console.log(`
     🚀 SERVIDOR AGORA INICIADO
     --------------------------------------------
@@ -300,5 +311,6 @@ app.listen(PORT, '0.0.0.0', () => {
     👉 Admin Servidor: admin@servidor.com / root123
     👉 Moderador: mod@agora.com / mod123
     👉 Monitor de actividad activo...
+    💬 ¡Sistema de Chat WebSockets conectado!
     --------------------------------------------`);
 });

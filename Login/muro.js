@@ -116,7 +116,55 @@ enlacesCategorias.forEach(enlace => {
         renderizarPostsEnMuro();
     });
 });
+// ==========================================================================
+// 1.6 LÓGICA DEL MENÚ DE PERFIL Y CERRAR SESIÓN
+// ==========================================================================
+document.addEventListener('DOMContentLoaded', () => {
+    const btnPerfil = document.getElementById('btn-menu-perfil');
+    const menuPerfil = document.getElementById('dropdown-perfil');
 
+    if (btnPerfil && menuPerfil) {
+        // 1. Abrir/Cerrar menú al dar clic en la foto
+        btnPerfil.addEventListener('click', (e) => {
+            e.stopPropagation(); // Evita que el clic se propague y cierre el menú
+            
+            // Alternamos el estado visible
+            if (menuPerfil.style.display === 'flex') {
+                menuPerfil.style.display = 'none';
+            } else {
+                menuPerfil.style.display = 'flex';
+                menuPerfil.style.flexDirection = 'column'; // Apila los botones
+            }
+        });
+
+        // 2. Cerrar el menú si haces clic en cualquier otro lado
+        document.addEventListener('click', (e) => {
+            if (!menuPerfil.contains(e.target) && !btnPerfil.contains(e.target)) {
+                menuPerfil.style.display = 'none';
+            }
+        });
+
+        // 3. Acción del botón "Ver Perfil"
+        const btnVerPerfil = document.getElementById('ver-mi-perfil');
+        if (btnVerPerfil) {
+            btnVerPerfil.addEventListener('click', () => {
+                window.location.href = 'perfil.html'; // Cambia si tu archivo se llama diferente
+            });
+        }
+
+        // 4. Acción del botón "Cerrar Sesión" (Usando tu alerta personalizada)
+        const btnCerrarSesion = document.getElementById('cerrar-sesion');
+        if (btnCerrarSesion) {
+            btnCerrarSesion.addEventListener('click', () => {
+                // Escondemos el menú primero para que no estorbe
+                menuPerfil.style.display = 'none';
+
+                // Llamamos a la función que creaste con el emoji de la puerta 🚪
+                mostrarAlertaCerrarSesion();
+            });
+        }
+    }
+});
 // ==========================================================================
 // 2. LÓGICA DEL NUEVO PUBLICADOR (Formulario)
 // ==========================================================================
