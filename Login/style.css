@@ -787,11 +787,10 @@ body.perfil-body-moderno { margin: 0; padding: 0; background: #f0f4f8; display: 
 @keyframes slideDownModal {
     to { transform: translateY(0); }
 }
-/* El menú oculto por defecto */
 .dropdown-perfil {
     display: none; 
     position: absolute;
-    top: 50px; /* Ajusta para que quede justo debajo de tu foto */
+    top: 50px;
     right: 0;
     background-color: white;
     box-shadow: 0px 4px 6px rgba(0,0,0,0.1);
@@ -799,10 +798,8 @@ body.perfil-body-moderno { margin: 0; padding: 0; background: #f0f4f8; display: 
     padding: 10px;
     z-index: 9999;
     flex-direction: column;
-    gap: 10px; /* Separación entre los dos botones */
+    gap: 10px;
 }
-
-/* La clase que el JavaScript le va a poner para mostrarlo */
 .dropdown-perfil.mostrar {
     display: flex;
 }

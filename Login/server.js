@@ -311,6 +311,6 @@ http.listen(PORT, '0.0.0.0', () => {
     👉 Admin Servidor: admin@servidor.com / root123
     👉 Moderador: mod@agora.com / mod123
     👉 Monitor de actividad activo...
-    💬 ¡Sistema de Chat WebSockets conectado!
+    💬 Sistema de Chat conectado
     --------------------------------------------`);
 });

@@ -59,11 +59,9 @@ loginForm.addEventListener('submit', async (e) => {
         const data = await response.json(); 
 
         if (response.ok) {
-            // Guardamos los datos de sesión
             localStorage.setItem('nombreUsuario', data.nombre);
             localStorage.setItem('userRole', data.role);
 
-            // --- REDIRECCIÓN CON VENTANA MODAL SEGÚN ROL ---
             if (data.role === 'admin_server') {
                 mostrarAlertaExito("¡Bienvenido Administrador! Ingresando al panel...", "admin.html");
             } else if (data.role === 'moderador') {
@@ -73,7 +71,6 @@ loginForm.addEventListener('submit', async (e) => {
             }
             
         } else {
-            // Mantenemos la alerta normal para los errores
             alert("❌ " + (data.message || "Credenciales incorrectas"));
         }
     } catch (error) {
@@ -99,14 +96,10 @@ registerForm.addEventListener('submit', async (e) => {
         });
 
         if (response.ok) {
-            // Cambiamos la vista visualmente hacia el login
             formContainer.classList.remove('toggle');
             banner.classList.remove('toggle');
-            
-            // Limpiamos los datos que escribió
             registerForm.reset();
             
-            // Mostramos la ventana de éxito (SIN redirección, para que se quede y haga login)
             mostrarAlertaExito("¡Registro exitoso! Ahora puedes iniciar sesión con tus nuevos datos.");
             
         } else {
