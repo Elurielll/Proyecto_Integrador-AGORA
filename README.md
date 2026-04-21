@@ -1,75 +1,59 @@
 # 🛒 Proyecto Integrador - ÁGORA  
 ### 👥 Equipo 6
 
-Desarrollo de una plataforma web de **compraventa de productos nuevos o usados**, enfocada en conectar usuarios según su **Estado y Municipio**, permitiendo realizar compras y ventas de forma local de manera sencilla y eficiente.  
+-Desarrollo de una plataforma web sobre compraventa de productos nuevos o usados cerca de nuestra localidad dependiendo nuestro Estado y Municipio. que permita usar a miles de usuarios para poder realizar compraventa en su localidad. desarrollado y programado en Visual Studio Code en lenguaje JavaScript y HTML principalmente.
 
-El proyecto fue desarrollado en **Visual Studio Code** utilizando principalmente **JavaScript, HTML y CSS**.
+## Contenidos📋 
+- [Vista Previa](#-vista-previa)
+- [Características Principales](#-características-principales)
+- [Tecnologías Utilizadas](#-tecnologías-utilizadas)
+- [Instalación](#-instalación)
+- [Uso](#-uso)
+- [Estructura del Proyecto](#-estructura-del-proyecto)
 
----
+## Vista Previa 📸 
 
-## 📸 Vista Previa  
+"Pantalla Principal"<img width="1582" height="765" src="https://github.com/user-attachments/assets/041ff126-66e1-44e5-accd-a2a0e38334e8" />
+"Pantalla Login"<img width="1596" height="765" src="https://github.com/user-attachments/assets/894442c3-5077-4b1b-be95-af468939f5c0" />
+"Pantalla de ADMIN SERVER <img width="1570" height="765" src="https://github.com/user-attachments/assets/fe06c6a4-32e2-4e85-9bcc-ab61facee112" />"
 
-### 🏠 Pantalla Principal
-<img width="1582" height="765" src="https://github.com/user-attachments/assets/041ff126-66e1-44e5-accd-a2a0e38334e8" />
+##  Características Principales ☝️
+- ✅ Interfaz: Diseñada para que los usuarios puedan utilizarla facilmente desde web o moviles.
+- ✅ Diseño: Una experiencia fluida que ayuda a los vendedores y compradores, en las publicaciones o chat.
+- ✅ Guia: Acesso rapido a los productos de su localidad.
 
-### 🔐 Pantalla Login
-<img width="1596" height="765" src="https://github.com/user-attachments/assets/894442c3-5077-4b1b-be95-af468939f5c0" />
+## Tecnologías Utilizadas 🛠 
+- **Lenguajes:** HTML5, CSS3, JavaScript
+- **Entorno de Ejecución:** Node.js
+- **Frameworks/Librerías:**
+   - *Frontend:* Vanilla JS.
+   - *Backend:* Express.js, Multer.
+- **Base de Datos:** Estructura de datos en memoria / Almacenamiento local.
+- **Herramientas y APIs:** npm, Fetch API, Web Storage API (LocalStorage).
 
-### ⚙️ Panel de Administración
-<img width="1570" height="765" src="https://github.com/user-attachments/assets/fe06c6a4-32e2-4e85-9bcc-ab61facee112" />
-
----
-
-## ✨ Características Principales  
-
-- ✅ **Interfaz intuitiva:** Fácil de usar tanto en web como en dispositivos móviles  
-- ✅ **Experiencia fluida:** Ideal para compradores y vendedores (publicaciones y chat)  
-- ✅ **Enfoque local:** Acceso rápido a productos dentro de la misma localidad  
-
----
-
-## 🛠 Tecnologías Utilizadas  
-
-- 💻 **Lenguajes:** HTML5, CSS3, JavaScript  
-- ⚙️ **Entorno:** Node.js  
-- 📦 **Frontend:** Vanilla JS  
-- 🔧 **Backend:** Express.js, Multer  
-- 🗄 **Base de Datos:** Almacenamiento local / en memoria  
-- 🔌 **Herramientas:** npm, Fetch API, LocalStorage  
-
----
-
-## 🚀 Tecnologías (Visual)
-
-<p align="center">
-  <img src="https://skillicons.dev/icons?i=html,css,js,nodejs,express" />
-</p>
-
----
-
-## 📬 Contacto  
--**Ramirez Larios Uriel Dominyk**
-[![GitHub](https://img.shields.io/badge/GitHub-Perfil-black?style=for-the-badge&logo=github)](https://github.com/Elurielll)
-
--**Estefanía Radillo Domínguez**
-[![GitHub](https://img.shields.io/badge/GitHub-Perfil-black?style=for-the-badge&logo=github)](https://github.com/Esteffz)
-
--**Kevin Orlando Olivera López**
-[![GitHub](https://img.shields.io/badge/GitHub-Perfil-black?style=for-the-badge&logo=github)](https://github.com/kolivera2)
-
--**Arres Naranjo Angel Emanuel**
-[![GitHub](https://img.shields.io/badge/GitHub-Perfil-black?style=for-the-badge&logo=github)](https://github.com/4NGEL3MANUEL)
+##  Instalación 🪛
+Pasos para utilizar el proyecto localmente...
+   
+##  Uso 💻
+-
 
 
----
+##  Estructura del Proyecto 📁
+Los archivos más importantes para entender la lógica:
 
-## ⭐ Apoya el proyecto  
 
-Si te gusta este proyecto, no olvides darle una estrella en GitHub ⭐  
+## ¡Atreve a emprender! ⛓️‍💥
+Este proyecto fue creado con el objetivo de facilitar y promover la compraventa local sea de donde sea que estes.
+Si les gustó el proyecto, considera dejarle una estrella(⭐) y no olviden compartirlo con sus amigos!!!.
 
----
 
-<p align="center">
-  Hecho con ❤️ por Equipo 6 <br>
-  <strong>Proyecto ÁGORA 🛒</strong>
-</p>
+##  Contacto 📨
+- *Desarrolladores:*
+- Ramirez Larios Uriel Dominyk
+- Estefanía Radillo Domínguez
+- Arres Naranjo Angel Emanuel
+- Kevin Orlando Olivera López
+
+- *Email:*
+- uramirez6@ucol.com.mx
+           

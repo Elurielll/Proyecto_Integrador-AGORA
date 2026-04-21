@@ -6,7 +6,7 @@
     <title>Agora - Login & Register</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="login-body">
     <div class="container">
         <div class="form-container">
             <div class="form-top">
@@ -28,20 +28,8 @@
                         <input type="password" name="password" id="password" placeholder="Tu contraseña" required>
                     </div>
                     
-                    <div class="reminder">
-                        <div class="checkbox-container">
-                            <input type="checkbox" id="terms" name="remember">
-                            <label for="terms">Recordar por 30 días</label>
-                        </div>
-                        <span class="forgot">¿Olvidaste tu contraseña?</span>
-                    </div>
-                    
                     <div class="buttons">
                         <button type="submit">Iniciar Sesión</button>
-                        <button type="button">
-                            <img src="icons/ic-google.svg" alt="Google" class="icon-google">
-                            Google
-                        </button>
                     </div>
                     
                     <p class="account">¿No tienes una cuenta? <a href="#" id="sign-up">Regístrate</a></p>
@@ -68,10 +56,6 @@
                     
                     <div class="buttons">
                         <button type="submit">Registrar</button>
-                        <button type="button">
-                            <img src="icons/ic-google.svg" alt="Google" class="icon-google">
-                            Google
-                        </button>
                     </div>
                     
                     <p class="account">¿Ya tienes una cuenta? <a href="#" id="sign-in">Inicia sesión</a></p>
@@ -86,6 +70,15 @@
         <div class="banner" id="banner">
             <div class="circle"></div>
             <div class="circle-2"></div>
+        </div>
+    </div>
+
+    <div id="modalExito" class="modal-exito-overlay" style="display: none;">
+        <div class="modal-exito-caja">
+            <div class="modal-exito-icono" style="font-size: 3rem; margin-bottom: 10px;">✅</div>
+            <h3 id="modalExitoTitulo">¡Éxito!</h3>
+            <p id="modalExitoMensaje" style="margin-bottom: 20px; color: #64748b;">Operación realizada con éxito.</p>
+            <button id="btnModalExito" class="btn-guardar" style="width: 100%;">Continuar</button>
         </div>
     </div>
 

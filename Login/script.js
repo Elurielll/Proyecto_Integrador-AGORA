@@ -1,3 +1,25 @@
+// --- FUNCIÓN DE VENTANA MODAL DE ÉXITO ---
+function mostrarAlertaExito(mensaje, destinoUrl = null) {
+    const modal = document.getElementById('modalExito');
+    const mensajeP = document.getElementById('modalExitoMensaje');
+    const btnContinuar = document.getElementById('btnModalExito');
+
+    // Cambiamos el texto
+    mensajeP.textContent = mensaje;
+    
+    // Mostramos la ventana
+    modal.style.display = 'flex';
+
+    // Qué hacer al darle click a "Continuar"
+    btnContinuar.onclick = function() {
+        modal.style.display = 'none'; // Ocultar
+        if (destinoUrl) {
+            window.location.href = destinoUrl; // Redirigir si hay url
+        }
+    };
+}
+
+// --- ELEMENTOS DEL DOM ---
 const signInBtn = document.getElementById('sign-in');
 const signUpBtn = document.getElementById('sign-up');
 const formContainer = document.getElementById('form');
@@ -41,20 +63,17 @@ loginForm.addEventListener('submit', async (e) => {
             localStorage.setItem('nombreUsuario', data.nombre);
             localStorage.setItem('userRole', data.role);
 
-            // --- REDIRECCIÓN SEGÚN ROL ---
+            // --- REDIRECCIÓN CON VENTANA MODAL SEGÚN ROL ---
             if (data.role === 'admin_server') {
-                // El administrador técnico va a su panel privado
-                window.location.href = "admin.html";
+                mostrarAlertaExito("¡Bienvenido Administrador! Ingresando al panel...", "admin.html");
             } else if (data.role === 'moderador') {
-                // El moderador va al muro con herramientas de limpieza
-                alert("🛡️ Modo: Moderador de Agora");
-                window.location.href = "publicaciones.html";
+                mostrarAlertaExito("🛡️ Modo Moderador de Agora. Redirigiendo al muro...", "publicaciones.html");
             } else {
-                // El usuario normal va al muro estándar
-                window.location.href = "publicaciones.html";
+                mostrarAlertaExito("¡Inicio de sesión exitoso! Serás redirigido al muro.", "publicaciones.html");
             }
             
         } else {
+            // Mantenemos la alerta normal para los errores
             alert("❌ " + (data.message || "Credenciales incorrectas"));
         }
     } catch (error) {
@@ -80,11 +99,21 @@ registerForm.addEventListener('submit', async (e) => {
         });
 
         if (response.ok) {
-            alert("✅ ¡Registro exitoso! Ya puedes iniciar sesión.");
+            // Cambiamos la vista visualmente hacia el login
             formContainer.classList.remove('toggle');
             banner.classList.remove('toggle');
+            
+            // Limpiamos los datos que escribió
+            registerForm.reset();
+            
+            // Mostramos la ventana de éxito (SIN redirección, para que se quede y haga login)
+            mostrarAlertaExito("¡Registro exitoso! Ahora puedes iniciar sesión con tus nuevos datos.");
+            
+        } else {
+            alert("❌ Hubo un error en el registro.");
         }
     } catch (error) {
         console.error("Error en el registro:", error);
+        alert("⚠️ Error de conexión en el registro.");
     }
 });

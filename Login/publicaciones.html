@@ -10,56 +10,80 @@
 
     <div class="pagina-container">
 
-        <!-- Columna izquierda: nav + botón ubicación - Kevin -->
         <div class="columna-izquierda">
-
-            <!-- Botón de Categorías - Kevin -->
             <nav class="nav-categorias">
+                
+                <div class="ubicacion-container">
+                    <button class="btn-ubicacion" id="btnUbicacion">📍 Seleccionar Ubicación</button>
+                </div>
+
                 <ul class="list-categorias">
-                    <li class="list-categorias__item list-categorias__item--click">
-                        <div class="list-categorias__button list-categorias__button--click">
-                            <img src="icons/category.svg" class="list-categorias__img">
-                            <a href="#" class="nav-categorias__link">Categorias</a>
-                            <img src="icons/arrow.svg" class="list-categorias__arrow">
+                    <li class="list-categorias__item">
+                        <div class="list-categorias__button">
+                            <a href="#" class="nav-categorias__link">Categorías</a>
+                            <svg class="list-categorias__arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
                         </div>
+                        
                         <ul class="list-categorias__show">
-                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Vehiculos</a></li>
-                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Supermercado</a></li>
-                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Tecnologia</a></li>
-                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Propiedades en Alquiler</a></li>
-                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Deporte y Fitness</a></li>
-                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Para el Hogar</a></li>
-                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Entretenimiento</a></li>
-                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Indumentaria</a></li>
-                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Musica</a></li>
-                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Jardineria</a></li>
-                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Jugueteria</a></li>
-                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Herramientas y Materiales</a></li>
-                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Pasatiempos</a></li>
-                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Aire Libre</a></li>
-                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Productos para Mascotas</a></li>
-                            <li class="list-categorias__inside"><a href="#" class="nav-categorias__link nav-categorias_link--inside">Viviendas en Venta</a></li>
+                            <li><a href="#" class="nav-categorias_link--inside">Electrónica</a></li>
+                            <li><a href="#" class="nav-categorias_link--inside">Hogar y Muebles</a></li>
+                            <li><a href="#" class="nav-categorias_link--inside">Vehículos</a></li>
+                            <li><a href="#" class="nav-categorias_link--inside">Inmuebles</a></li>
+                            <li><a href="#" class="nav-categorias_link--inside">Servicios</a></li>
                         </ul>
                     </li>
                 </ul>
             </nav>
+        </div>
 
-            <!-- Botón de ubicación - Kevin -->
-            <div class="ubicacion-container">
-                <button class="btn-ubicacion" id="btnUbicacion">
-                    📍 Seleccionar Estado
+        <div class="muro-wrapper">
+            <div class="contenedor-perfil-top">
+                <button class="btn-perfil-top" id="btn-menu-perfil">
+                    <img src="./icons/user-circle.svg" alt="Perfil" width="26" height="26">
                 </button>
+                <div class="dropdown-perfil" id="dropdown-perfil">
+                    <button id="ver-mi-perfil">Ver Perfil</button>
+                    <button id="cerrar-sesion" class="btn-logout">Cerrar Sesión</button>
+                </div>
             </div>
 
-        </div> 
-
-        <!-- Muro principal -->
-        <div class="muro-wrapper">
             <div class="muro-container">
                 <h2>Muro de la Comunidad Agora</h2>
                 
                 <div class="publicador">
-                    <textarea id="postContent" placeholder="¿Qué quieres compartir con el equipo?"></textarea>
+                    <div class="input-group-row">
+                        <div class="input-wrapper">
+                            <input type="text" id="postTitle" placeholder="Título" maxlength="30">
+                            <span class="error-text" id="err-title">Campo obligatorio</span>
+                        </div>
+                        <div class="input-wrapper">
+                            <input type="number" id="postPrice" placeholder="Precio ($)">
+                            <span class="error-text" id="err-price">Campo obligatorio</span>
+                        </div>
+                    </div>
+
+                    <div class="input-group-row">
+                        <div class="input-wrapper">
+                            <select id="postEstado">
+                                <option value="">Selecciona un Estado...</option>
+                                </select>
+                            <span class="error-text" id="err-estado">Campo obligatorio</span>
+                        </div>
+                        <div class="input-wrapper">
+                            <select id="postMunicipio" disabled>
+                                <option value="">Selecciona un Municipio...</option>
+                            </select>
+                            <span class="error-text" id="err-municipio">Campo obligatorio</span>
+                        </div>
+                    </div>
+
+                    <div class="input-wrapper">
+                        <textarea id="postContent" placeholder="Describe tu artículo..." maxlength="300"></textarea>
+                        <div class="textarea-footer">
+                            <span class="error-text" id="err-content">Campo obligatorio</span>
+                            <span class="char-counter"><span id="charCount">0</span> / 300</span>
+                        </div>
+                    </div>
                     
                     <div id="preview-container" class="edit-preview-box" style="display: none;"></div>
 
@@ -71,26 +95,18 @@
                         <button class="btn-publicar" id="btnPublish">Publicar</button>
                     </div>
                 </div>
-
                 <div class="feed" id="posts">
                 </div>
             </div>
         </div>
 
-        <!-- Modal de ubicación - Kevin -->
-        <div class="modal-overlay" id="modalUbicacion">
-            <div class="modal">
-                <div class="modal-header">
-                    <h3>Cambiar ubicación</h3>
-                    <button class="modal-cerrar" id="btnCerrarModal">✕</button>
-                </div>
-                <div class="modal-body">
-                    <label>Estado</label>
-                    <input type="text" id="inputEstado" placeholder="Ej: Colima">
-                    <ul id="listaEstados"></ul>
-                    <button class="btn-guardar" id="btnGuardarUbicacion">Guardar</button>
-                </div>
-            </div>
+    </div> 
+
+    <div id="alertaPersonalizada" class="alerta-overlay">
+        <div class="alerta-box">
+            <div class="alerta-icono">⚠️</div>
+            <p id="alertaMensaje">Mensaje aquí</p>
+            <button id="btnCerrarAlerta">Entendido</button>
         </div>
 
     </div> <!-- cierre pagina-container -->
@@ -104,6 +120,21 @@
         </div>
     </div>
 
-    <script src="muro.js?v=2"></script>
+    <div class="modal-overlay-ubi" id="modalUbicacion">
+        <div class="modal-ubi">
+            <div class="modal-header-ubi">
+                <h3>Selecciona tu estado</h3>
+                <button class="modal-cerrar-ubi" id="btnCerrarModalUbi">×</button>
+            </div>
+            <div class="modal-body-ubi">
+                <label for="inputEstado">Estado de la República:</label>
+                <input type="text" id="inputEstado" placeholder="Ej. Jalisco, Nuevo León...">
+                <ul id="listaEstados"></ul>
+                <button class="btn-guardar" id="btnGuardarUbicacion">Guardar Ubicación</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="muro.js?v=3"></script>
 </body>
 </html>
