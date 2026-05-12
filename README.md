@@ -30,11 +30,11 @@ El proyecto fue desarrollado en **Visual Studio Code** utilizando principalmente
 
 ## 🛠 Tecnologías Utilizadas  
 
-- 💻 **Lenguajes:** HTML5, CSS3, JavaScript  
+- 💻 **Lenguajes:** HTML, CSS3, JavaScript  
 - ⚙️ **Entorno:** Node.js  
 - 📦 **Frontend:** Vanilla JS  
 - 🔧 **Backend:** Express.js, Multer  
-- 🗄 **Base de Datos:** Almacenamiento local / en memoria  
+- 🗄 **Base de Datos:** phpMyAdmin  
 - 🔌 **Herramientas:** npm, Fetch API, LocalStorage  
 
 ---
