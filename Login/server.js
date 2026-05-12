@@ -7,6 +7,25 @@ const app = express();
 // ==========================================
 // 🚀 1. NUEVAS HERRAMIENTAS PARA EL CHAT
 // ==========================================
+const mysql = require('mysql2');
+
+// Crear la conexión a la base de datos de XAMPP
+const db = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',      // XAMPP usa 'root' como usuario por defecto
+    password: '',      // XAMPP no tiene contraseña por defecto, se deja en blanco
+    database: 'agora_db'
+});
+
+// Comprobar que el puente funciona
+db.connect((err) => {
+    if (err) {
+        console.error('❌ Error conectando a la base de datos:', err);
+        return;
+    }
+    console.log('✅ ¡Conectado exitosamente a la base de datos MySQL de Ágora!');
+});
+
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
 
@@ -54,91 +73,151 @@ const MODERADOR = { email: "mod@agora.com", pass: "mod123", role: "moderador", n
 
 app.post('/register', (req, res) => {
     const { fullname, email_reg, password_reg } = req.body;
-    usuariosRegistrados.push({ 
-        nombre: fullname, email: email_reg, password: password_reg,
-        bio: "¡Hola! Bienvenido a mi perfil.", municipio: "No especificado",
-        estado: "No especificado", fotoPerfil: "/icons/AgoralCON.jpeg"
+
+    // 1. La consulta SQL para insertar
+    const sql = 'INSERT INTO usuarios (nombre, correo, contrasena) VALUES (?, ?, ?)';
+    
+    db.query(sql, [fullname, email_reg, password_reg], (err, result) => {
+        if (err) {
+            console.error('❌ Error al insertar en MySQL:', err);
+            return res.status(500).send("Error en el servidor al registrar");
+        }
+        
+        // Mantuvimos tu lógica de registro de eventos
+        registrarEvento(fullname, "user", "Registro Nuevo", `Email: ${email_reg}`);
+        res.status(200).send("Registro exitoso");
     });
-    registrarEvento(fullname, "user", "Registro Nuevo", `Email: ${email_reg}`);
-    res.status(200).send("Registro exitoso");
 });
 
 app.post('/login', (req, res) => {
     const { email, password } = req.body;
-    let u = (email === ADMIN_SERVER.email && password === ADMIN_SERVER.pass) ? ADMIN_SERVER :
-            (email === MODERADOR.email && password === MODERADOR.pass) ? MODERADOR :
-            usuariosRegistrados.find(user => user.email === email && user.password === password);
 
-    if (u) {
-        registrarEvento(u.nombre || "Usuario", u.role || "user", "Inicio de Sesión");
-        return res.json({ role: u.role || 'user', nombre: u.nombre });
+    // A. Primero verificamos si son tus cuentas especiales fijas
+    if (email === ADMIN_SERVER.email && password === ADMIN_SERVER.pass) {
+        registrarEvento(ADMIN_SERVER.nombre, ADMIN_SERVER.role, "Inicio de Sesión");
+        return res.json({ role: ADMIN_SERVER.role, nombre: ADMIN_SERVER.nombre });
     }
-    res.status(401).json({ message: "Error de credenciales" });
+    if (email === MODERADOR.email && password === MODERADOR.pass) {
+        registrarEvento(MODERADOR.nombre, MODERADOR.role, "Inicio de Sesión");
+        return res.json({ role: MODERADOR.role, nombre: MODERADOR.nombre });
+    }
+
+    // B. Si no son ellos, buscamos en la Base de Datos
+    const sql = 'SELECT * FROM usuarios WHERE correo = ? AND contrasena = ?';
+    db.query(sql, [email, password], (err, results) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ message: "Error en el servidor" });
+        }
+
+        if (results.length > 0) {
+            const u = results[0]; // Tomamos el primer usuario encontrado
+            registrarEvento(u.nombre, "user", "Inicio de Sesión");
+            return res.json({ role: 'user', nombre: u.nombre });
+        } else {
+            // Si el arreglo de resultados está vacío
+            res.status(401).json({ message: "Correo o contraseña incorrectos" });
+        }
+    });
 });
 
 app.get('/api/perfil/:nombre', (req, res) => {
-    const usuario = usuariosRegistrados.find(u => u.nombre === req.params.nombre);
-    if (usuario) {
-        const { password, ...datosPublicos } = usuario;
-        res.json(datosPublicos);
-    } else res.status(404).json({ message: "Usuario no encontrado" });
+    // Pedimos explícitamente la columna foto_perfil
+    const sql = 'SELECT nombre, correo, bio, estado, municipio, foto_perfil FROM usuarios WHERE nombre = ?';
+    
+    db.query(sql, [req.params.nombre], (err, results) => {
+        if (err || results.length === 0) {
+            return res.status(404).json({ message: "Usuario no encontrado" });
+        }
+
+        // Enviamos los datos al navegador
+        const usuario = results[0];
+        res.json(usuario);
+    });
 });
 
 app.get('/api/publicaciones/usuario/:nombre', (req, res) => {
-    res.json(publicaciones.filter(p => p.autor === req.params.nombre));
+    const sql = `SELECT p.* FROM publicaciones p 
+                 JOIN usuarios u ON p.id_usuario = u.id 
+                 WHERE u.nombre = ? ORDER BY p.fecha_publicacion DESC`;
+    
+    db.query(sql, [req.params.nombre], (err, results) => {
+        if (err) return res.status(500).json({ message: "Error al obtener posts del usuario" });
+        
+        const postsProcesados = results.map(p => ({
+            ...p,
+            texto: p.descripcion,
+            imagenes: JSON.parse(p.fotos || '[]')
+        }));
+        res.json(postsProcesados);
+    });
 });
 
 app.post('/api/actualizar-perfil', (req, res) => {
-    const { nombre, nuevoNombre, bio, municipio, estado } = req.body;
-    
-    const usuario = usuariosRegistrados.find(u => u.nombre === nombre);
-    
-    if (usuario) {
-        if (nuevoNombre && nuevoNombre !== nombre) {
-            const nombreOcupado = usuariosRegistrados.some(u => u.nombre === nuevoNombre);
-            if (nombreOcupado) {
-                return res.status(400).send("Ese nombre de usuario ya está ocupado.");
-            }
-            usuario.nombre = nuevoNombre;
-            publicaciones.forEach(post => {
-                if (post.autor === nombre) {
-                    post.autor = nuevoNombre;
-                }
-                post.comentarios.forEach(comentario => {
-                    if (comentario.autor === nombre) {
-                        comentario.autor = nuevoNombre;
-                    }
-                });
-            });
-            
-            registrarEvento(nuevoNombre, usuario.role || "user", "Cambió su nombre de usuario", `De: ${nombre}`);
+    // Es mucho más seguro recibir el ID del usuario desde el frontend
+    const { id, nombre, nuevoNombre, bio, municipio, estado } = req.body;
+
+    // Si tu frontend envía el ID, úsalo en el WHERE. 
+    // Si aún usas el nombre, asegúrate de que el frontend sepa que el nombre cambió.
+    const sql = `UPDATE usuarios 
+                 SET nombre = ?, bio = ?, municipio = ?, estado = ? 
+                 WHERE nombre = ?`;
+
+    db.query(sql, [nuevoNombre, bio, municipio, estado, nombre], (err, result) => {
+        if (err) {
+            console.error("❌ Error SQL al actualizar perfil:", err);
+            // Si el error dice 'Foreign key constraint fails', es por la relación con publicaciones
+            return res.status(500).json({ message: "Error al guardar los datos en la base de datos" });
         }
 
-        if (bio !== undefined) usuario.bio = bio;
-        if (municipio !== undefined) usuario.municipio = municipio;
-        if (estado !== undefined) usuario.estado = estado;
-        
-        res.status(200).json({ message: "Perfil actualizado correctamente" });
-    } else {
-        res.status(404).json({ message: "Usuario no encontrado" });
-    }
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Usuario no encontrado" });
+        }
+
+        registrarEvento(nuevoNombre, "user", "Actualizó su perfil", `Bio: ${bio}`);
+        res.status(200).json({ 
+            message: "Perfil actualizado correctamente",
+            nuevoNombre: nuevoNombre // Devolvemos el nuevo nombre para que el frontend lo actualice
+        });
+    });
 });
 
 app.post('/api/actualizar-foto-perfil', upload.single('fotoPerfil'), (req, res) => {
-    const { nombreUsuario } = req.body;
-    if (!req.file) return res.status(400).json({ message: "No se subió ninguna imagen" });
-    const usuario = usuariosRegistrados.find(u => u.nombre === nombreUsuario);
-    if (usuario) {
-        if (usuario.fotoPerfil && !usuario.fotoPerfil.includes("AgoralCON") && usuario.fotoPerfil.startsWith("/uploads/")) {
-            eliminarArchivos([usuario.fotoPerfil]);
-        }
-        usuario.fotoPerfil = `/uploads/${req.file.filename}`;
-        registrarEvento(nombreUsuario, usuario.role || "user", "Cambio Foto Perfil");
-        res.status(200).json({ message: "Foto actualizada", nuevaRuta: usuario.fotoPerfil });
-    } else {
-        eliminarArchivos([`/uploads/${req.file.filename}`]);
-        res.status(404).json({ message: "Usuario no encontrado" });
+    // 1. Verificamos qué está llegando exactamente
+    const nombreUsuario = req.body.nombreUsuario;
+    const archivo = req.file;
+
+    console.log("--- Intento de actualización de foto ---");
+    console.log("Usuario recibido:", nombreUsuario);
+    console.log("Archivo recibido:", archivo ? archivo.filename : "NINGUNO");
+
+    if (!archivo) {
+        return res.status(400).json({ message: "No se recibió ninguna imagen" });
     }
+
+    if (!nombreUsuario) {
+        return res.status(400).json({ message: "No se recibió el nombre del usuario" });
+    }
+
+    const nuevaRutaFoto = `/uploads/${archivo.filename}`;
+
+    // 2. Actualizamos la base de datos
+    const sql = 'UPDATE usuarios SET foto_perfil = ? WHERE nombre = ?';
+    
+    db.query(sql, [nuevaRutaFoto, nombreUsuario], (err, result) => {
+        if (err) {
+            console.error("❌ Error SQL:", err);
+            return res.status(500).json({ message: "Error en la base de datos" });
+        }
+
+        if (result.affectedRows === 0) {
+            console.log("⚠️ No se encontró al usuario en la DB para actualizar la foto");
+            return res.status(404).json({ message: "Usuario no encontrado" });
+        }
+
+        console.log("✅ Foto guardada en DB con éxito para:", nombreUsuario);
+        res.status(200).json({ message: "Foto actualizada", nuevaRuta: nuevaRutaFoto });
+    });
 });
 
 app.get('/admin-full-stats', (req, res) => {
@@ -153,57 +232,77 @@ app.post('/track-online', (req, res) => {
 
 // --- PUBLICAR ---
 app.post('/publicar', upload.array('imagenes', 5), (req, res) => {
-    const { titulo, precio, estado, municipio, texto, autor, rol, estado_venta, categoria, condicion } = req.body; 
-    
-    const nuevoPost = {
-        id: Date.now(),
-        titulo: titulo || '',            
-        precio: precio || '',            
-        estado: estado || '',            
-        municipio: municipio || '',      
-        texto: texto || '', 
-        categoria: categoria || 'otros', 
-        condicion: condicion || '',
-        autor: autor || "Anónimo", 
-        rol: rol || "user", 
-        estado_venta: estado_venta || 'disponible', 
-        imagenes: req.files ? req.files.map(file => `/uploads/${file.filename}`) : [],
-        comentarios: [], 
-        fecha: new Date().toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }) 
-    };
-    
-    publicaciones.push(nuevoPost);
-    registrarEvento(nuevoPost.autor, nuevoPost.rol, "Nueva Publicación", `Post ID: ${nuevoPost.id}`);
-    res.status(201).json(nuevoPost);
+    const { titulo, precio, estado, municipio, texto, autor, categoria, condicion } = req.body;
+    const fotosPaths = req.files ? JSON.stringify(req.files.map(file => `/uploads/${file.filename}`)) : '[]';
+
+    // 1. Buscamos el ID del usuario basado en su nombre (autor)
+    db.query('SELECT id FROM usuarios WHERE nombre = ?', [autor], (err, userResult) => {
+        if (err || userResult.length === 0) {
+            return res.status(400).json({ message: "Usuario autor no encontrado" });
+        }
+        
+        const idUsuario = userResult[0].id;
+
+        // 2. Insertamos la publicación con el ID real
+        const sql = `INSERT INTO publicaciones 
+                     (id_usuario, titulo, descripcion, precio, estado_venta, estado, municipio, categoria, condicion, fotos) 
+                     VALUES (?, ?, ?, ?, 'Disponible', ?, ?, ?, ?, ?)`;
+        
+        const values = [idUsuario, titulo, texto, precio, estado, municipio, categoria, condicion, fotosPaths];
+
+        db.query(sql, values, (err, result) => {
+            if (err) return res.status(500).json({ message: "Error al publicar" });
+            registrarEvento(autor, "user", "Nueva Publicación", `ID: ${result.insertId}`);
+            res.status(201).json({ id: result.insertId });
+        });
+    });
 });
 
-app.get('/get-posts', (req, res) => { res.json(publicaciones); });
+app.get('/get-posts', (req, res) => {
+    // Usamos JOIN para traer el nombre del usuario que publicó
+    const sql = `
+        SELECT p.*, u.nombre AS autor 
+        FROM publicaciones p 
+        JOIN usuarios u ON p.id_usuario = u.id 
+        ORDER BY p.fecha_publicacion DESC`;
+
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).send(err);
+        
+        const postsProcesados = results.map(p => ({
+            ...p,
+            texto: p.descripcion, 
+            imagenes: JSON.parse(p.fotos || '[]') 
+        }));
+        res.json(postsProcesados);
+    });
+});
 
 // --- ESTADOS Y COMENTARIOS ---
 app.post('/cambiar-estado', (req, res) => {
     const { id, estado_venta } = req.body;
-    const post = publicaciones.find(p => p.id == id);
-    if (post) {
-        post.estado_venta = estado_venta;
+    const sql = 'UPDATE publicaciones SET estado_venta = ? WHERE id = ?';
+    
+    db.query(sql, [estado_venta, id], (err, result) => {
+        if (err) return res.status(500).json({ message: "Error al actualizar estado" });
         registrarEvento("Sistema", "N/A", "Cambio de Estado", `Post ${id} a ${estado_venta}`);
-        return res.status(200).json({ message: "Estado actualizado" });
-    }
-    res.status(404).json({ message: "Publicación no encontrada" });
+        res.status(200).json({ message: "Estado actualizado" });
+    });
 });
 
 app.post('/comentar', (req, res) => {
-    const { postId, textoComentario, autor, rol, fecha } = req.body; 
-    const post = publicaciones.find(p => p.id == postId);
-    if (post) {
-        post.comentarios.push({ 
-            texto: textoComentario, 
-            autor: autor, 
-            rol: rol || "user", 
-            fecha: fecha || new Date().toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })
-        });
+    const { postId, textoComentario, autor, rol } = req.body;
+    
+    const sql = 'INSERT INTO comentarios (id_publicacion, autor, texto, rol) VALUES (?, ?, ?, ?)';
+    
+    db.query(sql, [postId, autor, textoComentario, rol || 'user'], (err, result) => {
+        if (err) {
+            console.error("❌ Error al comentar:", err);
+            return res.status(500).json({ message: "Error en el servidor" });
+        }
         registrarEvento(autor, rol || "user", "Nuevo Comentario", `En post ID: ${postId}`);
-        res.status(200).json({ message: "Añadido" });
-    } else { res.status(404).json({ message: "Error" }); }
+        res.status(200).json({ message: "Añadido correctamente" });
+    });
 });
 
 app.post('/editar-comentario', (req, res) => {
@@ -231,42 +330,60 @@ app.post('/editar-post', upload.array('imagenes', 5), (req, res) => {
         postId, texto, titulo, precio, estado_venta, nombreUsuario, role, imagenesRestantes,
         condicion, categoria, estado, municipio
     } = req.body;
+
+    // 1. Verificar que el usuario sea el dueño o admin
+    const checkSql = `SELECT p.*, u.nombre AS autor FROM publicaciones p 
+                      JOIN usuarios u ON p.id_usuario = u.id WHERE p.id = ?`;
     
-    const post = publicaciones.find(p => p.id == postId);
-    
-    if (post && (post.autor === nombreUsuario || role === 'admin_server')) {
+    db.query(checkSql, [postId], (err, results) => {
+        if (err || results.length === 0) return res.status(404).json({ message: "Post no encontrado" });
+        
+        const post = results[0];
+        if (post.autor !== nombreUsuario && role !== 'admin_server') {
+            return res.status(403).json({ message: "No autorizado" });
+        }
+
+        // 2. Gestionar imágenes
         const fotosQueSeQuedan = Array.isArray(imagenesRestantes) ? imagenesRestantes : (imagenesRestantes ? [imagenesRestantes] : []);
-        
-        eliminarArchivos(post.imagenes.filter(img => !fotosQueSeQuedan.includes(img)));
-        
-        post.texto = texto;
-        post.titulo = titulo || post.titulo;
-        post.precio = precio || post.precio;
-        post.estado_venta = estado_venta || post.estado_venta;
-        
-        post.condicion = condicion || post.condicion;
-        post.categoria = categoria || post.categoria;
-        post.estado = estado || post.estado;
-        post.municipio = municipio || post.municipio;
-        
+        const viejasFotos = JSON.parse(post.fotos || '[]');
+        eliminarArchivos(viejasFotos.filter(img => !fotosQueSeQuedan.includes(img)));
+
         const nuevasFotos = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
-        post.imagenes = [...fotosQueSeQuedan, ...nuevasFotos];
+        const todasLasFotos = JSON.stringify([...fotosQueSeQuedan, ...nuevasFotos]);
+
+        // 3. Actualizar en la DB
+        const updateSql = `UPDATE publicaciones SET 
+                           titulo = ?, descripcion = ?, precio = ?, estado_venta = ?, 
+                           condicion = ?, categoria = ?, estado = ?, municipio = ?, fotos = ? 
+                           WHERE id = ?`;
         
-        return res.status(200).json({ message: "Publicación actualizada" });
-    }
-    
-    res.status(403).json({ message: "No autorizado" });
+        const values = [titulo, texto, precio, estado_venta, condicion, categoria, estado, municipio, todasLasFotos, postId];
+
+        db.query(updateSql, values, (err) => {
+            if (err) return res.status(500).json({ message: "Error al actualizar" });
+            res.status(200).json({ message: "Publicación actualizada" });
+        });
+    });
 });
 
 app.post('/borrar-post', (req, res) => {
-    const { postId, role } = req.body;
-    const idx = publicaciones.findIndex(p => p.id == postId);
-    if (idx !== -1) {
-        eliminarArchivos(publicaciones[idx].imagenes);
-        publicaciones.splice(idx, 1);
-        return res.status(200).json({ message: "Eliminado" });
-    }
-    res.status(403).json({ message: "Sin permisos" });
+    const { postId } = req.body;
+    
+    // Primero obtenemos las fotos para borrarlas del disco
+    db.query('SELECT fotos FROM publicaciones WHERE id = ?', [postId], (err, results) => {
+        if (results.length > 0) {
+            const fotos = JSON.parse(results[0].fotos || '[]');
+            eliminarArchivos(fotos); // Borra los archivos de la carpeta uploads
+
+            // Luego borramos de la DB
+            db.query('DELETE FROM publicaciones WHERE id = ?', [postId], (err) => {
+                if (err) return res.status(500).json({ message: "Error al eliminar de DB" });
+                res.status(200).json({ message: "Eliminado con éxito" });
+            });
+        } else {
+            res.status(404).json({ message: "No se encontró el post" });
+        }
+    });
 });
 
 app.post('/limpiar-servidor', (req, res) => {
