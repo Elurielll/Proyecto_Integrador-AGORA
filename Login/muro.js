@@ -128,7 +128,13 @@ document.addEventListener('DOMContentLoaded', () => {
         btnPerfil.addEventListener('click', (e) => {
             e.stopPropagation(); // Evita que el clic se propague y cierre el menú
             
-            // Alternamos el estado visible
+            // 🔥 RESTRICCIÓN PARA VISITANTES 🔥
+            if (typeof esVisitante === 'function' && esVisitante()) {
+                mostrarModalVisitante(); // Lanza tu alerta roja de "Oops"
+                return; // Cortamos la ejecución para que el menú NO se abra
+            }
+
+            // Alternamos el estado visible solo si NO es visitante
             if (menuPerfil.style.display === 'flex') {
                 menuPerfil.style.display = 'none';
             } else {
@@ -632,8 +638,17 @@ document.addEventListener('keydown', (e) => {
 });
 
 document.getElementById('fb-comment-btn')?.addEventListener('click', async () => {
+    // 🔥 RESTRICCIÓN PARA VISITANTES 🔥
+    if (typeof esVisitante === 'function' && esVisitante()) {
+        mostrarModalVisitante();
+        return; // Corta la ejecución para que no intente comentar
+    }
+
     const input = document.getElementById('fb-comment-input');
     const texto = input.value.trim();
+    // 🔥 Recuperamos el ID del localStorage
+    const idUsuario = localStorage.getItem('userId'); 
+
     if (!texto || !currentPostIdVisor) return;
 
     try {
@@ -643,7 +658,8 @@ document.getElementById('fb-comment-btn')?.addEventListener('click', async () =>
             body: JSON.stringify({
                 postId: currentPostIdVisor,
                 textoComentario: texto,
-                autor: obtenerNombreUsuario(),
+                id_usuario: idUsuario, // 🔥 Se lo enviamos a MySQL para que no dé error
+                autor: obtenerNombreUsuario(), // Mantenemos este por si tu backend lo necesita
                 fecha: new Date().toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })
             })
         });
@@ -658,12 +674,19 @@ document.getElementById('fb-comment-btn')?.addEventListener('click', async () =>
 });
 
 window.borrarComentario = (postId, indexComentario) => {
+    // 🔥 Recuperamos el ID
+    const idUsuario = localStorage.getItem('userId');
+
     AgoraModals.confirm("Borrar comentario", "¿Seguro que deseas borrar este comentario? Esta acción no se puede deshacer.", "Borrar", async () => {
         try {
             const res = await fetch('/borrar-comentario', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ postId, indexComentario })
+                body: JSON.stringify({ 
+                    postId, 
+                    indexComentario,
+                    id_usuario: idUsuario // 🔥 Se lo pasamos al backend
+                })
             });
             if(res.ok) {
                 await cargarPosts();
@@ -674,13 +697,21 @@ window.borrarComentario = (postId, indexComentario) => {
 };
 
 window.editarComentario = (postId, indexComentario, textoViejo) => {
+    // 🔥 Recuperamos el ID
+    const idUsuario = localStorage.getItem('userId');
+
     AgoraModals.prompt("Edita tu comentario:", textoViejo, async (nuevoTexto) => {
         if(!nuevoTexto || nuevoTexto === textoViejo) return;
         try {
             const res = await fetch('/editar-comentario', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ postId, indexComentario, nuevoTexto })
+                body: JSON.stringify({ 
+                    postId, 
+                    indexComentario, 
+                    nuevoTexto,
+                    id_usuario: idUsuario // 🔥 Se lo pasamos al backend
+                })
             });
             if(res.ok) {
                 await cargarPosts();
@@ -1175,6 +1206,12 @@ const btnCerrarModalPub = document.getElementById('btnCerrarModalPublicar');
 
 if (btnAbrirModalPub) {
     btnAbrirModalPub.addEventListener('click', () => {
+        // 🔥 RESTRICCIÓN PARA VISITANTES 🔥
+        if (typeof esVisitante === 'function' && esVisitante()) {
+            mostrarModalVisitante();
+            return; // Corta la ejecución para que no se abra el modal de publicar
+        }
+        
         modalPublicacion.style.display = 'flex'; 
     });
 }
@@ -1188,3 +1225,50 @@ window.addEventListener('click', (e) => {
         modalPublicacion.style.display = 'none';
     }
 });
+// ==========================================
+// CONTROL DE VISITANTES (MODAL RESTRICCIÓN)
+// ==========================================
+
+function esVisitante() {
+    // Si no hay userId en localStorage, asumimos que es visitante
+    const userId = localStorage.getItem('userId');
+    return !userId || userId === 'null' || userId === 'undefined';
+}
+
+function mostrarModalVisitante() {
+    let modalVisitante = document.getElementById('modal-visitante-restringido');
+
+    if (!modalVisitante) {
+        modalVisitante = document.createElement('div');
+        modalVisitante.id = 'modal-visitante-restringido';
+        modalVisitante.className = 'alerta-overlay activo'; 
+        modalVisitante.style.display = 'flex'; 
+
+        modalVisitante.innerHTML = `
+            <div class="alerta-box" style="text-align: center; padding: 25px; border-radius: 15px;">
+                <div class="alerta-icono" style="font-size: 3rem; margin-bottom: 15px;">🔒</div>
+                <h3 style="margin: 0; color: #613DB7; margin-bottom: 10px;">¡Oops! Acción restringida</h3>
+                <p style="margin-bottom: 25px; font-size: 1.1rem; color: #334155;">Necesitas iniciar sesión o crear una cuenta para interactuar, comentar o publicar.</p>
+                <div style="display: flex; gap: 15px; justify-content: center;">
+                    <button id="btn-cerrar-visitante" style="background: #cbd5e1; color: #334155; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s;">Seguir viendo</button>
+                    <button id="btn-ir-login" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s;">Iniciar Sesión</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modalVisitante);
+
+        // Eventos de los botones del modal
+        document.getElementById('btn-cerrar-visitante').addEventListener('click', () => {
+            modalVisitante.classList.remove('activo');
+            setTimeout(() => modalVisitante.style.display = 'none', 300);
+        });
+
+        document.getElementById('btn-ir-login').addEventListener('click', () => {
+            window.location.href = '/index.html'; // Ajusta esto si tu login está en otra ruta
+        });
+    } else {
+        modalVisitante.style.display = 'flex';
+        // Pequeño timeout para la animación si usas opacidad en CSS
+        setTimeout(() => modalVisitante.classList.add('activo'), 10);
+    }
+}

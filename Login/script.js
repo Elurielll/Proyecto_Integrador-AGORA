@@ -59,8 +59,12 @@ loginForm.addEventListener('submit', async (e) => {
         const data = await response.json(); 
 
         if (response.ok) {
+            // Guardamos los datos en el navegador para usarlos después
             localStorage.setItem('nombreUsuario', data.nombre);
             localStorage.setItem('userRole', data.role);
+            
+            // 🔥 ESTA ES LA LÍNEA CLAVE: Guardamos el ID del usuario
+            localStorage.setItem('userId', data.id); 
 
             if (data.role === 'admin_server') {
                 mostrarAlertaExito("¡Bienvenido Administrador! Ingresando al panel...", "admin.html");

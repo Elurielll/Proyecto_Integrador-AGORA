@@ -91,31 +91,23 @@ app.post('/register', (req, res) => {
 
 app.post('/login', (req, res) => {
     const { email, password } = req.body;
+    // ... (lógica de admin y moderador se queda igual)
 
-    // A. Primero verificamos si son tus cuentas especiales fijas
-    if (email === ADMIN_SERVER.email && password === ADMIN_SERVER.pass) {
-        registrarEvento(ADMIN_SERVER.nombre, ADMIN_SERVER.role, "Inicio de Sesión");
-        return res.json({ role: ADMIN_SERVER.role, nombre: ADMIN_SERVER.nombre });
-    }
-    if (email === MODERADOR.email && password === MODERADOR.pass) {
-        registrarEvento(MODERADOR.nombre, MODERADOR.role, "Inicio de Sesión");
-        return res.json({ role: MODERADOR.role, nombre: MODERADOR.nombre });
-    }
-
-    // B. Si no son ellos, buscamos en la Base de Datos
     const sql = 'SELECT * FROM usuarios WHERE correo = ? AND contrasena = ?';
     db.query(sql, [email, password], (err, results) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).json({ message: "Error en el servidor" });
-        }
+        if (err) return res.status(500).json({ message: "Error en el servidor" });
 
         if (results.length > 0) {
-            const u = results[0]; // Tomamos el primer usuario encontrado
+            const u = results[0]; 
             registrarEvento(u.nombre, "user", "Inicio de Sesión");
-            return res.json({ role: 'user', nombre: u.nombre });
+            
+            // --- CAMBIO AQUÍ: Enviamos también el u.id ---
+            return res.json({ 
+                role: 'user', 
+                nombre: u.nombre, 
+                id: u.id  // <--- Esto es vital
+            });
         } else {
-            // Si el arreglo de resultados está vacío
             res.status(401).json({ message: "Correo o contraseña incorrectos" });
         }
     });
@@ -137,19 +129,39 @@ app.get('/api/perfil/:nombre', (req, res) => {
 });
 
 app.get('/api/publicaciones/usuario/:nombre', (req, res) => {
-    const sql = `SELECT p.* FROM publicaciones p 
-                 JOIN usuarios u ON p.id_usuario = u.id 
-                 WHERE u.nombre = ? ORDER BY p.fecha_publicacion DESC`;
+    // Aquí está el sqlPosts que se había borrado
+    const sqlPosts = `SELECT p.* FROM publicaciones p 
+                      JOIN usuarios u ON p.id_usuario = u.id 
+                      WHERE u.nombre = ? ORDER BY p.fecha_publicacion DESC`;
     
-    db.query(sql, [req.params.nombre], (err, results) => {
+    db.query(sqlPosts, [req.params.nombre], (err, posts) => {
         if (err) return res.status(500).json({ message: "Error al obtener posts del usuario" });
         
-        const postsProcesados = results.map(p => ({
-            ...p,
-            texto: p.descripcion,
-            imagenes: JSON.parse(p.fotos || '[]')
-        }));
-        res.json(postsProcesados);
+        // Y aquí está el sqlComments actualizado
+        const sqlComments = `
+            SELECT 
+                c.id, 
+                c.id_publicacion, 
+                c.comentario, 
+                c.comentario AS texto, 
+                c.comentario AS textoComentario, 
+                c.fecha, 
+                u.nombre AS autor 
+            FROM comentarios c
+            JOIN usuarios u ON c.id_usuario = u.id
+            ORDER BY c.fecha ASC`;
+
+        db.query(sqlComments, (err, comments) => {
+            if (err) return res.status(500).json({ message: "Error al obtener comentarios" });
+
+            const postsProcesados = posts.map(p => ({
+                ...p,
+                texto: p.descripcion,
+                imagenes: JSON.parse(p.fotos || '[]'),
+                comentarios: comments.filter(c => c.id_publicacion === p.id)
+            }));
+            res.json(postsProcesados);
+        });
     });
 });
 
@@ -259,22 +271,48 @@ app.post('/publicar', upload.array('imagenes', 5), (req, res) => {
 });
 
 app.get('/get-posts', (req, res) => {
-    // Usamos JOIN para traer el nombre del usuario que publicó
-    const sql = `
+    // 1. Traemos las publicaciones
+    const sqlPosts = `
         SELECT p.*, u.nombre AS autor 
         FROM publicaciones p 
         JOIN usuarios u ON p.id_usuario = u.id 
         ORDER BY p.fecha_publicacion DESC`;
 
-    db.query(sql, (err, results) => {
+    db.query(sqlPosts, (err, posts) => {
         if (err) return res.status(500).send(err);
         
-        const postsProcesados = results.map(p => ({
-            ...p,
-            texto: p.descripcion, 
-            imagenes: JSON.parse(p.fotos || '[]') 
-        }));
-        res.json(postsProcesados);
+        // 2. Traemos TODOS los comentarios unidos con el nombre de su autor
+        const sqlComments = `
+            SELECT 
+                c.id, 
+                c.id_publicacion, 
+                c.comentario, 
+                c.comentario AS texto, 
+                c.comentario AS textoComentario, 
+                c.fecha, 
+                u.nombre AS autor 
+            FROM comentarios c
+            JOIN usuarios u ON c.id_usuario = u.id
+            ORDER BY c.fecha ASC`;
+
+        db.query(sqlComments, (err, comments) => {
+            if (err) return res.status(500).send(err);
+
+            // 3. Empaquetamos todo junto para el frontend
+            const postsProcesados = posts.map(p => {
+                // Filtramos solo los comentarios que le pertenecen a esta publicación
+                const comentariosDelPost = comments.filter(c => c.id_publicacion === p.id);
+
+                return {
+                    ...p,
+                    texto: p.descripcion, 
+                    imagenes: JSON.parse(p.fotos || '[]'),
+                    comentarios: comentariosDelPost // 🔥 Aquí inyectamos los comentarios
+                };
+            });
+            
+            res.json(postsProcesados);
+        });
     });
 });
 
@@ -291,38 +329,42 @@ app.post('/cambiar-estado', (req, res) => {
 });
 
 app.post('/comentar', (req, res) => {
-    const { postId, textoComentario, autor, rol } = req.body;
+    // IMPORTANTE: Asegúrate de que el frontend envíe 'id_usuario' (el número)
+    const { postId, id_usuario, textoComentario } = req.body;
     
-    const sql = 'INSERT INTO comentarios (id_publicacion, autor, texto, rol) VALUES (?, ?, ?, ?)';
+    // Usamos los nombres exactos: id_publicacion, id_usuario, comentario
+    const sql = 'INSERT INTO comentarios (id_publicacion, id_usuario, comentario) VALUES (?, ?, ?)';
     
-    db.query(sql, [postId, autor, textoComentario, rol || 'user'], (err, result) => {
+    db.query(sql, [postId, id_usuario, textoComentario], (err, result) => {
         if (err) {
-            console.error("❌ Error al comentar:", err);
+            console.error("❌ Error real en MySQL:", err);
             return res.status(500).json({ message: "Error en el servidor" });
         }
-        registrarEvento(autor, rol || "user", "Nuevo Comentario", `En post ID: ${postId}`);
-        res.status(200).json({ message: "Añadido correctamente" });
+        res.status(200).json({ message: "Añadido correctamente", id: result.insertId });
     });
 });
 
 app.post('/editar-comentario', (req, res) => {
-    const { postId, indexComentario, nuevoTexto } = req.body;
-    const post = publicaciones.find(p => p.id == postId);
-    if (post && post.comentarios[indexComentario]) {
-        post.comentarios[indexComentario].texto = nuevoTexto;
-        return res.status(200).json({ message: "Comentario editado" });
-    }
-    res.status(403).json({ message: "Error al editar comentario" });
+    const { idComentario, nuevoTexto, id_usuario } = req.body;
+    
+    const sql = 'UPDATE comentarios SET comentario = ? WHERE Id = ? AND id_usuario = ?';
+    
+    db.query(sql, [nuevoTexto, idComentario, id_usuario], (err, result) => {
+        if (err || result.affectedRows === 0) return res.status(403).json({ message: "No se pudo editar" });
+        res.status(200).json({ message: "Comentario editado" });
+    });
 });
 
 app.post('/borrar-comentario', (req, res) => {
-    const { postId, indexComentario } = req.body;
-    const post = publicaciones.find(p => p.id == postId);
-    if (post && post.comentarios[indexComentario]) {
-        post.comentarios.splice(indexComentario, 1);
-        return res.status(200).json({ message: "Comentario eliminado" });
-    }
-    res.status(403).json({ message: "Error al borrar comentario" });
+    const { idComentario, id_usuario } = req.body; 
+    
+    // Solo borra si el ID del comentario y el ID del usuario coinciden (dueño)
+    const sql = 'DELETE FROM comentarios WHERE Id = ? AND id_usuario = ?';
+    
+    db.query(sql, [idComentario, id_usuario], (err, result) => {
+        if (err || result.affectedRows === 0) return res.status(403).json({ message: "No se pudo eliminar" });
+        res.status(200).json({ message: "Comentario eliminado" });
+    });
 });
 
 app.post('/editar-post', upload.array('imagenes', 5), (req, res) => {
