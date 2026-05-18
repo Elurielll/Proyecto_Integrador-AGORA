@@ -1188,3 +1188,65 @@ window.addEventListener('click', (e) => {
         modalPublicacion.style.display = 'none';
     }
 });
+
+// ==========================================================================
+// 7. LÓGICA DE LA BANDEJA DE ENTRADA (CONEXIÓN CON SERVER)
+// ==========================================================================
+
+function toggleBandeja() {
+    const bandeja = document.getElementById('bandeja-entrada');
+    if (!bandeja) return;
+
+    // Alternar visibilidad
+    const estaCerrada = bandeja.style.display === 'none' || bandeja.style.display === '';
+    bandeja.style.display = estaCerrada ? 'flex' : 'none';
+
+    if (estaCerrada) {
+        const miNombre = obtenerNombreUsuario();
+        const lista = document.getElementById('lista-contactos-chat');
+        if (!lista) return;
+
+        lista.innerHTML = '<p style="text-align:center; padding:20px; color:gray;">Cargando...</p>';
+
+        // Conectamos con la ruta exacta de tu server.js
+        fetch(`/api/mis-chats/${encodeURIComponent(miNombre)}`)
+            .then(res => res.json())
+            .then(chats => {
+                lista.innerHTML = '';
+                
+                if (chats.length === 0) {
+                    lista.innerHTML = '<p style="text-align:center; padding:20px; color:gray;">No tienes mensajes.</p>';
+                    return;
+                }
+
+                chats.forEach(chat => {
+                    const item = document.createElement('div');
+                    item.className = 'chat-item';
+                    // Redirige al chat de Uriel pasando el nombre del otro usuario
+                    item.onclick = () => {
+                        window.location.href = `chat.html?usuario=${encodeURIComponent(chat.nombre)}`;
+                    };
+                    
+                    item.innerHTML = `
+                        <img src="${chat.foto || './icons/user-circle.svg'}" alt="User">
+                        <div class="chat-item-info">
+                            <h4>${chat.nombre}</h4>
+                            <p>${chat.ultimoMensaje}</p>
+                        </div>
+                        <span style="font-size:10px; color:#999;">${chat.hora}</span>
+                    `;
+                    lista.appendChild(item);
+                });
+            })
+            .catch(err => {
+                console.error("Error:", err);
+                lista.innerHTML = '<p style="text-align:center; color:red;">Error al cargar.</p>';
+            });
+    }
+}
+
+// Esta función es necesaria para que el "onclick" de arriba no de error
+function abrirChatCon(nombreVendedor) {
+    if (!nombreVendedor) return;
+    window.location.href = `chat.html?usuario=${encodeURIComponent(nombreVendedor)}`;
+}

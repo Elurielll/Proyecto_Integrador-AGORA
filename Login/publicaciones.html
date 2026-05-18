@@ -40,9 +40,14 @@
 
         <div class="muro-wrapper">
             <div class="contenedor-perfil-top">
+                <button class="btn-perfil-top" onclick="toggleBandeja()" style="margin-right: 10px;">
+                    <img src="./icons/chat-icon.svg" alt="Mensajes" width="26" height="26">
+                </button>
+
                 <button class="btn-perfil-top" id="btn-menu-perfil">
                     <img src="./icons/user-circle.svg" alt="Perfil" width="26" height="26">
                 </button>
+                
                 <div class="dropdown-perfil" id="dropdown-perfil">
                     <button id="ver-mi-perfil">Ver Perfil</button>
                     <button id="cerrar-sesion" class="btn-logout">Cerrar Sesión</button>
@@ -316,5 +321,14 @@
     </div>
 
     <script src="muro.js?v=3"></script>
+
+    <div id="bandeja-entrada" style="display: none;">
+        <div class="bandeja-header" style="display: flex; justify-content: space-between; align-items: center; background: #2563eb; color: white; padding: 10px 15px; border-radius: 12px 12px 0 0;">
+            <span style="font-weight: bold;">Mis Mensajes</span>
+            <button onclick="toggleBandeja()" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer;">&times;</button>
+        </div>
+        <div id="lista-contactos-chat" style="flex: 1; overflow-y: auto; background: white;">
+        </div>
+    </div>
 </body>
 </html>

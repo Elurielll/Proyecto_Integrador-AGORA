@@ -32,44 +32,94 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // === Leer el nombre de la URL ===
+        // === 1. CONFIGURACIÓN INICIAL Y VARIABLES DE IDENTIDAD ===
+        const socket = io(); // Inicializamos la conexión en tiempo real con el servidor
         const urlParams = new URLSearchParams(window.location.search);
-        const usuarioDestino = urlParams.get('usuario');
         
+        // Obtenemos el nombre del vendedor desde la URL (ej: chat.html?usuario=Juan)
+        const usuarioDestino = urlParams.get('usuario'); 
+        
+        // Recuperamos el nombre del usuario logueado desde la memoria del navegador
+        const miNombre = localStorage.getItem('nombreUsuario'); 
+
+        // Referencias a los elementos del DOM (HTML)
+        const form = document.getElementById('input-form');
+        const input = document.getElementById('input-msg');
+        const chatWindow = document.getElementById('chat-window');
+
+        // Si tenemos un destinatario, actualizamos el nombre en la cabecera del chat
         if (usuarioDestino) {
             document.getElementById('nombre-chat-header').textContent = usuarioDestino;
             document.title = "Chat con " + usuarioDestino;
         }
 
-        // === Lógica de WebSockets (Socket.io) ===
-        const socket = io();
-        const form = document.getElementById('input-form');
-        const input = document.getElementById('input-msg');
-        const chatWindow = document.getElementById('chat-window');
+        // === 2. CARGA DEL HISTORIAL (PERSISTENCIA) ===
+        // Al entrar al chat, solicitamos al servidor los mensajes previos entre estos dos usuarios
+        fetch(`/api/historial?yo=${miNombre}&otro=${usuarioDestino}`)
+            .then(res => res.json())
+            .then(mensajes => {
+                // Recorremos el historial y dibujamos cada mensaje en la pantalla
+                mensajes.forEach(msg => dibujarMensaje(msg));
+            })
+            .catch(err => console.error("Error cargando historial:", err));
 
+        // === 3. ENVÍO DE MENSAJES ===
         form.onsubmit = (e) => {
-            e.preventDefault();
-            if (input.value.trim()) {
-                socket.emit('enviar-mensaje', { texto: input.value });
-                input.value = '';
+            e.preventDefault(); // Evitamos que la página se recargue al enviar el formulario
+            
+            // Validamos que el mensaje no esté vacío y que el usuario esté identificado
+            if (input.value.trim() && miNombre) {
+                
+                // Creamos el paquete de datos para el servidor
+                const dataMensaje = { 
+                    texto: input.value,
+                    emisor: miNombre,       // Quién envía
+                    receptor: usuarioDestino // Quién recibe
+                };
+
+                // Emitimos el evento 'enviar-mensaje' al servidor vía WebSockets
+                socket.emit('enviar-mensaje', dataMensaje);
+                
+                input.value = ''; // Limpiamos el campo de texto
             }
         };
 
+        // === 4. RECEPCIÓN DE MENSAJES EN TIEMPO REAL ===
         socket.on('mostrar-mensaje', (data) => {
-            const div = document.createElement('div');
-            const esMio = data.id === socket.id;
-            
-            div.classList.add('bubble');
-            div.classList.add(esMio ? 'me' : 'others');
+            /**
+            * FILTRO DE SEGURIDAD Y PRIVACIDAD:
+            * Como socket.io emite a todos por defecto, validamos que el mensaje 
+            * pertenezca a esta conversación específica (entre tú y el vendedor).
+            */
+            const esParaEsteChat = 
+                (data.emisor === miNombre && data.receptor === usuarioDestino) || 
+                (data.emisor === usuarioDestino && data.receptor === miNombre);
 
+            if (esParaEsteChat) {
+                dibujarMensaje(data);
+            }
+        });
+
+        // === 5. FUNCIÓN AUXILIAR DE RENDERIZADO ===
+        function dibujarMensaje(data) {
+            const div = document.createElement('div');
+            
+            // Determinamos si el mensaje es nuestro o de la otra persona para aplicar estilos CSS
+            const esMio = data.emisor === miNombre;
+            
+            // Aplicamos las clases CSS correspondientes (.me para derecha, .others para izquierda)
+            div.className = `bubble ${esMio ? 'me' : 'others'}`;
+            
+            // Insertamos el texto y la hora del mensaje
             div.innerHTML = `
-                ${data.texto}
-                <span class="hora">${data.hora}</span>
+                ${data.texto} 
+                <span class="hora">${data.hora || new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
             `;
 
+            // Añadimos el mensaje a la ventana y hacemos scroll automático al final
             chatWindow.appendChild(div);
-            chatWindow.scrollTop = chatWindow.scrollHeight; // Hace scroll hacia abajo automáticamente
-        });
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
     </script>
 </body>
 </html>

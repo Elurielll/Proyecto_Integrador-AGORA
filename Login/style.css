@@ -777,7 +777,7 @@ body.perfil-body-moderno { margin: 0; padding: 0; background: #f0f4f8; display: 
 }
 
 /* =========================================
-   ANIMACIONES GLOBALES UNIFICADAS
+    ANIMACIONES GLOBALES UNIFICADAS
 ========================================= */
 @keyframes fadeInModal {
     from { opacity: 0; transform: translateY(-20px); }
@@ -802,4 +802,139 @@ body.perfil-body-moderno { margin: 0; padding: 0; background: #f0f4f8; display: 
 }
 .dropdown-perfil.mostrar {
     display: flex;
+}
+
+/* Este es el contenedor que envuelve los dos botones */
+.contenedor-perfil-top {
+    display: flex !important;
+    flex-direction: row !important; /* Los pone uno al lado del otro */
+    align-items: center !important;
+    gap: 10px; /* Espacio entre los dos círculos */
+}
+
+/* Aseguramos que ambos botones sean círculos perfectos */
+.btn-perfil-top {
+    width: 45px !important;
+    height: 45px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    border: 1px solid #ddd !important;
+    background-color: white !important;
+    cursor: pointer;
+}
+
+.btn-perfil-top img {
+    width: 24px !important;
+    height: 24px !important;
+    object-fit: contain;
+}
+
+/* LA BANDEJA: Esto es lo que evita que se arruine el diseño */
+#bandeja-entrada {
+    position: fixed !important; /* IMPORTANTE: Para que flote sobre el muro */
+    top: 80px !important;      /* Distancia desde arriba */
+    right: 20px !important;     /* Pegada a la derecha */
+    width: 320px !important;    /* Ancho fijo */
+    height: 450px !important;   /* Alto fijo */
+    z-index: 9999 !important;   /* Por encima de todo */
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    display: none;              /* El JS la muestra/oculta */
+    flex-direction: column;
+    border: 1px solid #ddd;
+    overflow: hidden;
+}
+
+/* Contenedor de cada chat (el "globo" o bloque) */
+.chat-item {
+    display: flex;
+    align-items: center; /* Alinea verticalmente foto y texto */
+    padding: 12px;
+    margin: 8px; /* Espacio entre cada chat */
+    border-radius: 12px; /* Bordes redondeados para el contenedor */
+    background-color: #1e1e1e; /* Color de fondo del bloque */
+    cursor: pointer;
+    transition: background 0.3s;
+    border: 1px solid #333;
+    gap: 12px; /* Espacio entre la foto y el contenido */
+}
+
+.chat-item:hover {
+    background-color: #2d2d2d;
+}
+
+/* La imagen de perfil circular */
+.chat-item img, .chat-item-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0; /* Evita que la foto se aplaste */
+}
+
+/* Contenedor de la información al lado de la foto */
+.chat-info {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Necesario para los tres puntos */
+    width: 100%;
+}
+
+/* Línea superior: Nombre y Hora */
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px;
+}
+
+.chat-name {
+    font-weight: bold;
+    color: white;
+    font-size: 0.95rem;
+}
+
+.chat-time {
+    font-size: 0.7rem;
+    color: #888;
+}
+
+/* El mensaje con límite y tres puntos (...) */
+.chat-last-message {
+    font-size: 0.85rem;
+    color: #bbb;
+    white-space: nowrap; /* Evita que el texto salte de línea */
+    overflow: hidden; /* Esconde lo que sobra */
+    text-overflow: ellipsis; /* Agrega los "..." automáticamente */
+    max-width: 180px; /* Ajusta este ancho según el tamaño de tu modal */
+}
+
+/* 1. Ajustamos el contenedor de la info para que no deje crecer al texto infinito */
+.chat-item-info {
+    flex: 1; /* Para que ocupe el espacio disponible entre la foto y la hora */
+    min-width: 0; /* TRUCO VITAL: Evita que flexbox se estire con textos largos */
+    padding: 0 10px; /* Un poquito de espacio a los lados */
+}
+
+/* 2. Le ponemos el límite y los tres puntitos al párrafo del mensaje */
+.chat-item-info p {
+    white-space: nowrap;       /* Evita que salte a la siguiente línea */
+    overflow: hidden;          /* Esconde todo lo que no cabe */
+    text-overflow: ellipsis;   /* Agrega los "..." */
+    margin: 0;                 /* Quitamos el margen por defecto del párrafo */
+    font-size: 0.85rem;
+    color: #94a3b8;            /* Un color grisáceo sutil para el mensaje */
+}
+
+/* 3. De paso, le quitamos el margen al h4 para que se vea más juntito y limpio */
+.chat-item-info h4 {
+    margin: 0 0 3px 0;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Por si alguien tiene un nombre súper largo */
 }
