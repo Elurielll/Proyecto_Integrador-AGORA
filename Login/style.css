@@ -803,3 +803,111 @@ body.perfil-body-moderno { margin: 0; padding: 0; background: #f0f4f8; display: 
 .dropdown-perfil.mostrar {
     display: flex;
 }
+
+/* ==========================================
+   ESTILOS EXCLUSIVOS PARA LISTA DE BORRADORES
+   ========================================== */
+#lista-borradores-ul {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+.borrador-vacio {
+    text-align: center;
+    color: #64748b;
+    padding: 20px;
+    font-style: italic;
+}
+
+/* Tarjeta contenedora de cada borrador */
+.borrador-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    transition: all 0.25s ease;
+}
+
+/* Efecto al pasar el cursor sobre la tarjeta */
+.borrador-card:hover {
+    background: #ffffff;
+    border-color: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(37, 99, 235, 0.08);
+}
+
+.borrador-info {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    max-width: 75%;
+}
+
+/* Icono redondo decorativo */
+.borrador-icon {
+    font-size: 1.2rem;
+    background: #eff6ff;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    min-height: 38px;
+}
+
+.borrador-textos {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.borrador-title {
+    color: #1e293b;
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.borrador-desc {
+    color: #64748b;
+    font-size: 0.85rem;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Botón moderno de Editar */
+.btn-editar-borrador {
+    background: #2563eb;
+    color: #ffffff;
+    border: none;
+    padding: 7px 18px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border-radius: 20px;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.15);
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.btn-editar-borrador:hover {
+    background: #1d4ed8;
+    transform: scale(1.03);
+}
+
+.btn-editar-borrador:active {
+    transform: scale(0.97);
+}

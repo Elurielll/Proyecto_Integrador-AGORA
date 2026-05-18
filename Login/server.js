@@ -75,7 +75,9 @@ app.post('/register', (req, res) => {
     const { fullname, email_reg, password_reg } = req.body;
 
     // 1. La consulta SQL para insertar
-    const sql = 'INSERT INTO usuarios (nombre, correo, contrasena) VALUES (?, ?, ?)';
+   const sql = `INSERT INTO borradores 
+             (usuario_id, titulo, precio, estado, municipio, categoria, condicion, descripcion) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
     
     db.query(sql, [fullname, email_reg, password_reg], (err, result) => {
         if (err) {
@@ -243,8 +245,10 @@ app.post('/track-online', (req, res) => {
 });
 
 // --- PUBLICAR ---
+// --- PUBLICAR O GUARDAR BORRADOR ---
 app.post('/publicar', upload.array('imagenes', 5), (req, res) => {
-    const { titulo, precio, estado, municipio, texto, autor, categoria, condicion } = req.body;
+    // Recibimos 'estado_venta' desde el frontend (ej: 'Disponible' o 'Borrador')
+    const { titulo, precio, estado, municipio, texto, autor, categoria, condicion, estado_venta } = req.body;
     const fotosPaths = req.files ? JSON.stringify(req.files.map(file => `/uploads/${file.filename}`)) : '[]';
 
     // 1. Buscamos el ID del usuario basado en su nombre (autor)
@@ -255,17 +259,32 @@ app.post('/publicar', upload.array('imagenes', 5), (req, res) => {
         
         const idUsuario = userResult[0].id;
 
-        // 2. Insertamos la publicación con el ID real
+        // Determinar el estado final (Por defecto será 'Disponible' si no se envía)
+        const tipoPublicacion = estado_venta || 'Disponible';
+
+        // ⚠️ RESPALDO ANTICRASH: Si es borrador y vienen vacíos, asignamos valores por defecto
+        // para que MySQL no truene por la restricción NOT NULL
+        const finalTitulo = titulo ? titulo.trim() : (tipoPublicacion === 'Borrador' ? 'Borrador sin título' : '');
+        const finalTexto = texto ? texto.trim() : (tipoPublicacion === 'Borrador' ? 'Sin descripción' : '');
+        const finalPrecio = precio ? parseFloat(precio) : 0.00;
+
+        // 2. Insertamos la publicación con el tipo dinámico
         const sql = `INSERT INTO publicaciones 
                      (id_usuario, titulo, descripcion, precio, estado_venta, estado, municipio, categoria, condicion, fotos) 
-                     VALUES (?, ?, ?, ?, 'Disponible', ?, ?, ?, ?, ?)`;
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         
-        const values = [idUsuario, titulo, texto, precio, estado, municipio, categoria, condicion, fotosPaths];
+        const values = [idUsuario, finalTitulo, finalTexto, finalPrecio, tipoPublicacion, estado, municipio, categoria, condicion, fotosPaths];
 
         db.query(sql, values, (err, result) => {
-            if (err) return res.status(500).json({ message: "Error al publicar" });
-            registrarEvento(autor, "user", "Nueva Publicación", `ID: ${result.insertId}`);
-            res.status(201).json({ id: result.insertId });
+            if (err) {
+                console.error("❌ Error real en MySQL al guardar/publicar:", err);
+                return res.status(500).json({ message: "Error al procesar la publicación" });
+            }
+            
+            const accionLog = tipoPublicacion === 'Borrador' ? "Guardó Borrador" : "Nueva Publicación";
+            registrarEvento(autor, "user", accionLog, `ID: ${result.insertId}`);
+            
+            res.status(201).json({ id: result.insertId, estado_venta: tipoPublicacion });
         });
     });
 });
@@ -457,6 +476,48 @@ io.on('connection', (socket) => {
     });
 });
 
+// ==========================================
+// 🔍 ENDPOINT COMPLETO PARA CONSULTAR BORRADORES POR NOMBRE DE USUARIO
+// ==========================================
+app.get('/api/borradores/usuario/:nombreUsuario', (req, res) => {
+    const nombreUsuario = req.params.nombreUsuario;
+
+    // 1. Buscamos el ID numérico del usuario basándonos en su nombre
+    db.query('SELECT id FROM usuarios WHERE nombre = ?', [nombreUsuario], (err, userResult) => {
+        if (err || userResult.length === 0) {
+            return res.status(404).json({ message: "Usuario no encontrado" });
+        }
+        
+        const idUsuario = userResult[0].id;
+
+        // 2. Buscamos en la nueva tabla 'borradores' usando el 'usuario_id'
+        const sql = `SELECT * FROM borradores WHERE usuario_id = ? ORDER BY id DESC`;
+        
+        db.query(sql, [idUsuario], (err, results) => {
+            if (err) {
+                console.error("❌ Error en MySQL al leer la tabla borradores:", err);
+                return res.status(500).json({ message: "Error al obtener los borradores de la base de datos" });
+            }
+
+            // Mapeamos los resultados para asegurar que 'descripcion' y 'estado_republica'
+            // no rompan el mapeo del objeto en muro.js
+            const borradoresProcesados = results.map(b => ({
+                id: b.id,
+                titulo: b.titulo,
+                precio: b.precio,
+                descripcion: b.descripcion,
+                texto: b.descripcion, // Duplicado de seguridad
+                estado: b.estado_republica, // Normalizado para controles estándar
+                estado_republica: b.estado_republica,
+                municipio: b.municipio,
+                categoria: b.categoria,
+                condicion: b.condicion
+            }));
+
+            res.json(borradoresProcesados);
+        });
+    });
+});
 // ==========================================
 // 🚀 3. INICIO DEL SERVIDOR (FUSIONADO)
 // ==========================================

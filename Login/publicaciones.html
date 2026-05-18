@@ -65,82 +65,104 @@
                     <button>¿Que vamos a publicar hoy?</button>
                 </div>
 
-                <div id="modalPublicacion" class="modal-overlay" style="display: none;">
-                    <div class="modal-content">
-                        <span class="btn-cerrar-modal" id="btnCerrarModalPublicar">&times;</span>
-                        <h3 style="margin-top: 0; color: #613DB7; text-align: center; margin-bottom: 20px;">Crear Publicación</h3>
+<div id="modalPublicacion" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="position: relative; overflow: hidden;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; position: relative;">
+            <button id="btn-ver-borradores" style="background: transparent; border: 1px solid #e2e8f0; color: #475569; font-weight: 600; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; transition: all 0.2s; z-index: 2;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+                Borradores
+            </button>
+            
+            <h3 style="margin: 0; color: #0b2da6; position: absolute; left: 50%; transform: translateX(-50%); font-size: 1.25rem; z-index: 1;">Crear Publicación</h3>
+            
+            <span class="btn-cerrar-modal" id="btnCerrarModalPublicar" style="cursor: pointer; font-size: 1.5rem; color: #94a3b8; transition: color 0.2s; z-index: 2;">&times;</span>
+        </div>
 
-                        <div class="publicador" style="box-shadow: none; padding: 0; border: none; background: transparent;">
-                            <div class="input-group-row">
-                                <div class="input-wrapper">
-                                    <input type="text" id="postTitle" placeholder="Título" maxlength="30">
-                                    <span class="error-text" id="err-title">Campo obligatorio</span>
-                                </div>
-                                <div class="input-wrapper">
-                                    <input type="text" id="postPrice" placeholder="Precio ($)" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-                                    <span class="error-text" id="err-price">Campo obligatorio</span>
-                                </div>
-                            </div>
+        <div id="contenedor-lista-borradores" style="display: none; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; padding: 15px; margin-bottom: 20px;">
+            <h4 style="margin: 0 0 15px 0; color: #334155; text-align: center; font-size: 1rem;">Tus Borradores Guardados</h4>
+            <ul id="lista-borradores-ul" style="list-style: none; padding: 0; margin: 0; max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+                </ul>
+            <button type="button" id="btn-volver-edicion" style="margin-top: 15px; background: white; border: 1px solid #cbd5e1; color: #475569; width: 100%; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">← Volver al formulario</button>
+        </div>
 
-                            <div class="input-group-row">
-                                <div class="input-wrapper">
-                                    <select id="postEstado">
-                                        <option value="">Selecciona un Estado...</option>
-                                    </select>
-                                    <span class="error-text" id="err-estado">Campo obligatorio</span>
-                                </div>
-                                <div class="input-wrapper">
-                                    <select id="postMunicipio" disabled>
-                                        <option value="">Selecciona un Municipio...</option>
-                                    </select>
-                                    <span class="error-text" id="err-municipio">Campo obligatorio</span>
-                                </div>
-                            </div>
-
-                            <div class="input-group-row" style="margin-bottom: 15px;">
-                                <div class="input-wrapper" style="width: 100%;">
-                                    <select id="postCategoria" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-input-color); font-family: inherit; font-size: 0.95rem; color: #334155; outline: none; transition: border-color 0.2s;">
-                                        <option value="">Selecciona una Categoría...</option>
-                                        <option value="Electrónica">Electrónica</option>
-                                        <option value="Hogar y Muebles">Hogar y Muebles</option>
-                                        <option value="Vehículos">Vehículos</option>
-                                        <option value="Ropa">Ropa</option>
-                                        <option value="Accesorios">Accesorios</option>
-                                        <option value="Servicios">Servicios</option>
-                                    </select>
-                                    <span class="error-text" id="err-categoria">Campo obligatorio</span>
-                                </div>
-                                <div class="input-wrapper" style="width: 100%;">
-                                    <select id="postCondicion" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-input-color); font-family: inherit; font-size: 0.95rem; color: #334155; outline: none; transition: border-color 0.2s;">
-                                        <option value="">Condición...</option>
-                                        <option value="Nuevo">✨ Nuevo</option>
-                                        <option value="Buen estado">👍 Buen estado</option>
-                                        <option value="Usado">📦 Usado</option>
-                                    </select>
-                                    <span class="error-text" id="err-condicion" style="display: none; color: #ef4444; font-size: 0.8rem; margin-top: 4px;">Campo obligatorio</span>
-                                </div>
-                            </div>
-
-                            <div class="input-wrapper">
-                                <textarea id="postContent" placeholder="Describe tu artículo..." maxlength="300"></textarea>
-                                <div class="textarea-footer">
-                                    <span class="error-text" id="err-content">Campo obligatorio</span>
-                                    <span class="char-counter"><span id="charCount">0</span> / 300</span>
-                                </div>
-                            </div>
-                            
-                            <div id="preview-container" class="edit-preview-box" style="display: none;"></div>
-
-                            <div class="acciones-publicador">
-                                <label for="postImage" class="btn-image">
-                                    <span>📷 Añadir Fotos</span>
-                                    <input type="file" id="postImage" accept="image/png, image/jpeg, image/jpg, image/webp" multiple style="display: none;">
-                                </label>
-                                <button class="btn-publicar" id="btnPublish">Publicar</button>
-                            </div>
-                        </div>
-                    </div>
+        <div class="publicador" id="cuerpo-formulario-publicacion" style="box-shadow: none; padding: 0; border: none; background: transparent;">
+            
+            <div class="input-group-row">
+                <div class="input-wrapper">
+                    <input type="text" id="postTitle" placeholder="Título" maxlength="30">
+                    <span class="error-text" id="err-title">Campo obligatorio</span>
                 </div>
+                <div class="input-wrapper">
+                    <input type="text" id="postPrice" placeholder="Precio ($)" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                    <span class="error-text" id="err-price">Campo obligatorio</span>
+                </div>
+            </div>
+
+            <div class="input-group-row">
+                <div class="input-wrapper">
+                    <select id="postEstado">
+                        <option value="">Selecciona un Estado...</option>
+                    </select>
+                    <span class="error-text" id="err-estado">Campo obligatorio</span>
+                </div>
+                <div class="input-wrapper">
+                    <select id="postMunicipio" disabled>
+                        <option value="">Selecciona un Municipio...</option>
+                    </select>
+                    <span class="error-text" id="err-municipio">Campo obligatorio</span>
+                </div>
+            </div>
+
+            <div class="input-group-row" style="margin-bottom: 15px;">
+                <div class="input-wrapper" style="width: 100%;">
+                    <select id="postCategoria" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-input-color); font-family: inherit; font-size: 0.95rem; color: #334155; outline: none;">
+                        <option value="">Selecciona una Categoría...</option>
+                        <option value="Electrónica">Electrónica</option>
+                        <option value="Hogar y Muebles">Hogar y Muebles</option>
+                        <option value="Vehículos">Vehículos</option>
+                        <option value="Ropa">Ropa</option>
+                        <option value="Accesorios">Accesorios</option>
+                        <option value="Servicios">Servicios</option>
+                    </select>
+                    <span class="error-text" id="err-categoria">Campo obligatorio</span>
+                </div>
+                <div class="input-wrapper" style="width: 100%;">
+                    <select id="postCondicion" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-input-color); font-family: inherit; font-size: 0.95rem; color: #334155; outline: none;">
+                        <option value="">Condición...</option>
+                        <option value="Nuevo">✨ Nuevo</option>
+                        <option value="Buen estado">👍 Buen estado</option>
+                        <option value="Usado">📦 Usado</option>
+                    </select>
+                    <span class="error-text" id="err-condicion" style="display: none; color: #ef4444; font-size: 0.8rem; margin-top: 4px;">Campo obligatorio</span>
+                </div>
+            </div>
+
+            <div class="input-wrapper">
+                <textarea id="postContent" placeholder="Describe tu artículo..." maxlength="300" style="resize: none; min-height: 80px;"></textarea>
+                <div class="textarea-footer">
+                    <span class="error-text" id="err-content">Campo obligatorio</span>
+                    <span class="char-counter"><span id="charCount">0</span> / 300</span>
+                </div>
+            </div>
+            
+            <div id="preview-container" class="edit-preview-box" style="display: none;"></div>
+
+            <div class="acciones-publicador" style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #f1f5f9;">
+                <label for="postImage" class="btn-image" style="cursor: pointer; display: flex; align-items: center; gap: 5px; color: #64748b; font-weight: 600; padding: 8px 12px; border-radius: 8px; border: 1px dashed #cbd5e1; background: #f8fafc;">
+                    <span>📷 Añadir Fotos</span>
+                    <input type="file" id="postImage" accept="image/png, image/jpeg, image/jpg, image/webp" multiple style="display: none;">
+                </label>
+                
+                <div style="display: flex; gap: 12px;">
+                    <button type="button" id="btn-guardar-borrador" style="background: transparent; color: #3e5c9e; border: 1px solid #3e5c9e; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s;">Guardar borrador</button>
+                    <button class="btn-publicar" id="btnPublish" style="padding: 10px 24px; border-radius: 8px; font-weight: 600;">Publicar</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
                 <div class="feed" id="posts">
                 </div>
             </div>
