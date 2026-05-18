@@ -57,7 +57,7 @@
             <div class="muro-container">
                 <div class="muro-header">
                     <img src="./icons/AgoraICON.jpeg" alt="Logo Agora" class="logo-mini">
-                    <h2>Agora</h2>
+                    <h2>AGORA</h2><h6>marketplace</h6>
                 </div>
                 
                 <div class="buscador-wrapper" style="position: relative; margin-bottom: 20px; width: 100%;">
@@ -316,6 +316,18 @@
             <div class="modal-editar-acciones">
                 <button class="btn-guardar" id="btn-cancelar-edicion" style="background: #cbd5e1; color: #334155;">Cancelar</button>
                 <button class="btn-guardar" id="btn-guardar-edicion">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalVisitante" class="modal-exito-overlay" style="display: none; z-index: 9999;">
+        <div class="modal-exito-caja">
+            <div class="modal-exito-icono" style="font-size: 3rem; margin-bottom: 10px;">🛑</div>
+            <h3 id="modalVisitanteTitulo" style="color: #ef4444;">ACCIÓN DENEGADA VISITANTE</h3>
+            <p id="modalVisitanteMensaje" style="margin-bottom: 20px; color: #64748b; font-weight: bold;">Inicia sesión para poder interactuar.</p>
+            <div style="display: flex; gap: 10px; width: 100%;">
+                <button id="btnVisitanteLogin" class="btn-guardar" style="width: 50%; background-color: #000080; color: white;">Inicia sesión</button>
+                <button id="btnVisitanteVolver" class="btn-guardar" style="width: 50%; background-color: #cbd5e1; color: #334155;">Volver atrás</button>
             </div>
         </div>
     </div>

@@ -66,7 +66,7 @@ async function cargarDatosPerfil() {
 
         document.getElementById('vista-nombre').innerText = usuario.nombre;
         document.getElementById('vista-bio').innerText = usuario.bio;
-        document.getElementById('avatar-img').src = usuario.fotoPerfil;
+        document.getElementById('avatar-img').src = usuario.foto_perfil || '/icons/AgoralCON.jpeg';
         document.getElementById('vista-ubicacion').innerText = `${usuario.estado || 'Estado'}, ${usuario.municipio || 'Municipio'}`;
 
         document.getElementById('edit-nombre').value = usuario.nombre;
