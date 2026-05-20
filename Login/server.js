@@ -74,18 +74,15 @@ const MODERADOR = { email: "mod@agora.com", pass: "mod123", role: "moderador", n
 app.post('/register', (req, res) => {
     const { fullname, email_reg, password_reg } = req.body;
 
-    // 1. La consulta SQL para insertar
-   const sql = `INSERT INTO borradores 
-             (usuario_id, titulo, precio, estado, municipio, categoria, condicion, descripcion) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+    // CORREGIDO: Ahora apunta a la tabla usuarios con sus 3 valores correspondientes
+    const sql = `INSERT INTO usuarios (nombre, correo, contrasena) VALUES (?, ?, ?)`;
     
     db.query(sql, [fullname, email_reg, password_reg], (err, result) => {
         if (err) {
-            console.error('❌ Error al insertar en MySQL:', err);
+            console.error('❌ Error al insertar en MySQL (Registro):', err);
             return res.status(500).send("Error en el servidor al registrar");
         }
         
-        // Mantuvimos tu lógica de registro de eventos
         registrarEvento(fullname, "user", "Registro Nuevo", `Email: ${email_reg}`);
         res.status(200).send("Registro exitoso");
     });
@@ -477,37 +474,91 @@ io.on('connection', (socket) => {
 });
 
 // ==========================================
-// 🔍 ENDPOINT COMPLETO PARA CONSULTAR BORRADORES POR NOMBRE DE USUARIO
+// 📝 SECCIÓN DE BORRADORES (GUARDAR Y CONSULTAR)
 // ==========================================
+
+// 1. 💾 RUTA PARA GUARDAR UN BORRADOR (POST)
+app.post('/api/borradores', (req, res) => {
+    console.log("📥 Intentando guardar borrador. Datos recibidos del frontend:", req.body);
+    
+    const { autor, titulo, precio, estado, municipio, categoria, condicion, descripcion } = req.body;
+
+    if (!autor) {
+        console.log("⚠️ Error: El frontend no envió el nombre del autor.");
+        return res.status(400).json({ message: "No se especificó el autor del borrador" });
+    }
+
+    db.query('SELECT id FROM usuarios WHERE nombre = ?', [autor], (err, userResult) => {
+        if (err) {
+            console.error("❌ Error SQL al buscar usuario:", err);
+            return res.status(500).json({ message: "Error interno al buscar usuario" });
+        }
+        if (userResult.length === 0) {
+            console.log(`⚠️ Usuario "${autor}" no encontrado al intentar guardar.`);
+            return res.status(404).json({ message: "Usuario no encontrado" });
+        }
+
+        const usuarioId = userResult[0].id;
+        const precioFinal = parseFloat(precio) || 0.00;
+
+        const sql = `INSERT INTO borradores 
+            (usuario_id, titulo, precio, estado_republica, municipio, categoria, condicion, descripcion) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+        const valores = [usuarioId, titulo, precioFinal, estado, municipio, categoria, condicion, descripcion];
+
+        db.query(sql, valores, (err, result) => {
+            if (err) {
+                console.error("❌ Error en MySQL al guardar borrador:", err);
+                return res.status(500).json({ message: "Error al guardar en la base de datos" });
+            }
+
+            console.log("✅ ¡Borrador guardado con éxito en la BD! ID asignado:", result.insertId);
+            
+            // 🔥 ACTIVADO: Ya registra el evento en tu historial porque confirmamos que existe la función
+            registrarEvento(autor, "user", "Guardó Borrador", `Título: ${titulo}`);
+            
+            res.status(201).json({ message: "Borrador guardado exitosamente", id: result.insertId });
+        });
+    });
+});
+
+// 2. 🔍 RUTA PARA CONSULTAR LOS BORRADORES (GET) - ¡ESTA ERA LA QUE FALTABA!
 app.get('/api/borradores/usuario/:nombreUsuario', (req, res) => {
     const nombreUsuario = req.params.nombreUsuario;
+    console.log(`🔍 Frontend solicitando borradores para el usuario: "${nombreUsuario}"`);
 
-    // 1. Buscamos el ID numérico del usuario basándonos en su nombre
+    if (!nombreUsuario || nombreUsuario === "undefined" || nombreUsuario === "null") {
+        return res.status(400).json({ message: "Nombre de usuario no válido" });
+    }
+
     db.query('SELECT id FROM usuarios WHERE nombre = ?', [nombreUsuario], (err, userResult) => {
-        if (err || userResult.length === 0) {
+        if (err) {
+            console.error("❌ Error SQL al buscar usuario:", err);
+            return res.status(500).json({ message: "Error interno del servidor" });
+        }
+        if (userResult.length === 0) {
+            console.log(`⚠️ El usuario "${nombreUsuario}" no existe en la tabla usuarios.`);
             return res.status(404).json({ message: "Usuario no encontrado" });
         }
         
         const idUsuario = userResult[0].id;
-
-        // 2. Buscamos en la nueva tabla 'borradores' usando el 'usuario_id'
         const sql = `SELECT * FROM borradores WHERE usuario_id = ? ORDER BY id DESC`;
         
         db.query(sql, [idUsuario], (err, results) => {
             if (err) {
                 console.error("❌ Error en MySQL al leer la tabla borradores:", err);
-                return res.status(500).json({ message: "Error al obtener los borradores de la base de datos" });
+                return res.status(500).json({ message: "Error al obtener los borradores" });
             }
 
-            // Mapeamos los resultados para asegurar que 'descripcion' y 'estado_republica'
-            // no rompan el mapeo del objeto en muro.js
+            console.log(`✅ Se encontraron y enviaron ${results.length} borradores para ${nombreUsuario}`);
+
             const borradoresProcesados = results.map(b => ({
                 id: b.id,
-                titulo: b.titulo,
-                precio: b.precio,
-                descripcion: b.descripcion,
-                texto: b.descripcion, // Duplicado de seguridad
-                estado: b.estado_republica, // Normalizado para controles estándar
+                titulo: b.titulo || 'Borrador sin título',
+                precio: b.precio || 0,
+                descripcion: b.descripcion || '',
+                texto: b.descripcion || '', 
+                estado: b.estado_republica, 
                 estado_republica: b.estado_republica,
                 municipio: b.municipio,
                 categoria: b.categoria,
@@ -516,6 +567,33 @@ app.get('/api/borradores/usuario/:nombreUsuario', (req, res) => {
 
             res.json(borradoresProcesados);
         });
+    });
+});
+
+// 3. 🗑️ RUTA PARA ELIMINAR UN BORRADOR (DELETE)
+app.delete('/api/borradores/:id', (req, res) => {
+    const borradorId = req.params.id;
+    console.log(`🗑️ Frontend solicitando eliminar el borrador ID: ${borradorId}`);
+
+    if (!borradorId) {
+        return res.status(400).json({ message: "ID del borrador no proporcionado." });
+    }
+
+    const sql = 'DELETE FROM borradores WHERE id = ?';
+    
+    db.query(sql, [borradorId], (err, result) => {
+        if (err) {
+            console.error("❌ Error en MySQL al eliminar el borrador:", err);
+            return res.status(500).json({ message: "Error interno del servidor al intentar eliminar." });
+        }
+
+        if (result.affectedRows > 0) {
+            console.log(`✅ Borrador con ID ${borradorId} eliminado con éxito de la base de datos.`);
+            res.status(200).json({ message: "Borrador eliminado correctamente." });
+        } else {
+            console.log(`⚠️ No se pudo eliminar: El borrador con ID ${borradorId} no existe.`);
+            res.status(404).json({ message: "El borrador no fue encontrado." });
+        }
     });
 });
 // ==========================================
