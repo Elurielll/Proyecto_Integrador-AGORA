@@ -1,3 +1,87 @@
+// ========================================================
+// 🔒 INTERCEPTOR SUPREMO PARA VISITANTES (CON MENÚ PERFIL)
+// ========================================================
+
+// 1. Validamos si es un visitante real
+const esVisitante = () => {
+    const rol = localStorage.getItem('userRole');
+    const id = localStorage.getItem('userId');
+    return !id || !rol || rol === 'visitante';
+};
+
+// 2. Creamos el modal con estilos blindados (independientes de tu CSS)
+const mostrarModalVisitante = () => {
+    let modal = document.getElementById('modal-visitante-supremo');
+    
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-visitante-supremo';
+        modal.style.cssText = 'position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background: rgba(0,0,0,0.6) !important; z-index: 999999 !important; display: flex !important; align-items: center !important; justify-content: center !important; font-family: sans-serif !important;';
+        
+        modal.innerHTML = `
+            <div style="background: white !important; text-align: center !important; padding: 30px !important; border-radius: 16px !important; box-shadow: 0 20px 40px rgba(0,0,0,0.3) !important; max-width: 90% !important; width: 360px !important; box-sizing: border-box !important;">
+                <div style="font-size: 3.5rem !important; margin-bottom: 15px !important;">🔒</div>
+                <p style="margin: 0 0 25px 0 !important; font-size: 1.2rem !important; color: #1e293b !important; font-weight: bold !important; line-height: 1.4 !important;">
+                    Para realizar esta acción debes iniciar sesión primero
+                </p>
+                <div style="display: flex !important; flex-direction: column !important; gap: 10px !important;">
+                    <button id="btn-login-go" style="background: #3b82f6 !important; color: white !important; border: none !important; padding: 12px !important; border-radius: 8px !important; cursor: pointer !important; font-weight: bold !important; font-size: 1rem !important; width: 100% !important; transition: background 0.2s;">
+                        Iniciar sesión
+                    </button>
+                    <button id="btn-visitor-continue" style="background: #e2e8f0 !important; color: #334155 !important; border: none !important; padding: 12px !important; border-radius: 8px !important; cursor: pointer !important; font-weight: bold !important; font-size: 1rem !important; width: 100% !important; transition: background 0.2s;">
+                        Continuar como visitante
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        // Acción: Continuar como visitante (Cierra la alerta)
+        document.getElementById('btn-visitor-continue').addEventListener('click', () => {
+            modal.style.setProperty('display', 'none', 'important');
+        });
+
+        // Acción: Iniciar Sesión (Redirecciona)
+        document.getElementById('btn-login-go').addEventListener('click', () => {
+            window.location.href = '/index.html';
+        });
+    }
+    
+    modal.style.setProperty('display', 'flex', 'important');
+};
+
+// 3. Captura los clics ANTES de que los botones ejecuten su código original
+document.addEventListener('click', function(e) {
+    // Si NO es visitante, ignoramos el guardián y dejamos pasar el clic normal
+    if (!esVisitante()) return;
+
+    const el = e.target;
+
+    // Detectar clic en el botón "¿Que vamos a publicar hoy?"
+    const esBotonPublicar = el.textContent.includes('publicar hoy') || 
+                            el.closest('button')?.textContent.includes('publicar hoy');
+
+    // Detectar clic en la barra de "Agregar un comentario..."
+    const esInputComentario = el.placeholder?.includes('comentario') || 
+                              el.closest('[placeholder*="comentario"]') ||
+                              el.textContent.includes('comentario...');
+
+    // Detectar clic en el icono de perfil usando su ID o clase exacta
+    const esIconoPerfil = el.id === 'btn-menu-perfil' || 
+                          el.closest('#btn-menu-perfil') || 
+                          el.classList.contains('btn-perfil-top') || 
+                          el.closest('.btn-perfil-top');
+
+    // 🔥 Si coincide con cualquiera de las 3 acciones, congelamos el navegador
+    if (esBotonPublicar || esInputComentario || esIconoPerfil) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation(); // Frena los modals y eventos originales en seco
+        
+        mostrarModalVisitante();
+    }
+}, true); // El true activa la fase de captura precoz para adelantarse a otros scripts
+
 // ==========================================================================
 // CONFIGURACIÓN INICIAL Y VARIABLES GLOBALES
 // ==========================================================================
@@ -542,6 +626,10 @@ window.toggleMenu = (event, postId) => {
 
 document.addEventListener('click', () => document.querySelectorAll('.menu-dropdown').forEach(m => m.classList.remove('show')));
 window.verPerfil = (nombreUsuario) => {
+    if (esVisitante()) {
+        mostrarModalVisitante();
+        return; // Cortamos la ejecución para que no redireccione
+    }
     window.location.href = `/perfil.html?usuario=${encodeURIComponent(nombreUsuario)}`;
 };
 
@@ -850,6 +938,53 @@ if(editPostImagesInput) {
         editPostImagesInput.value = ""; 
     });
 }
+
+// ==========================================
+// 🛡️ GUARDIÁN DE VISITANTES (ACTUALIZADO)
+// ==========================================
+window.mostrarModalVisitante = () => {
+    // Usamos un ID único que no choque con tu CSS tradicional
+    let modal = document.getElementById('modal-visitante-blindado');
+    
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-visitante-blindado';
+        
+        // Aplicamos !important a absolutamente todo para evitar bloqueos del style.css
+        modal.style.cssText = 'position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background: rgba(0,0,0,0.7) !important; z-index: 999999 !important; display: flex !important; align-items: center !important; justify-content: center !important;';
+        
+        modal.innerHTML = `
+            <div style="background: white !important; text-align: center !important; padding: 35px !important; border-radius: 15px !important; box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important; max-width: 90% !important; width: 380px !important; display: block !important; visibility: visible !important; opacity: 1 !important;">
+                <div style="font-size: 3.5rem !important; margin-bottom: 15px !important; display: block !important;">🔒</div>
+                <p style="margin-bottom: 25px !important; font-size: 1.15rem !important; color: #1e293b !important; font-weight: bold !important; line-height: 1.5 !important; display: block !important;">
+                    Para hacer esto primero debes iniciar sesión.
+                </p>
+                <div style="display: flex !important; flex-direction: column !important; gap: 10px !important; width: 100% !important;">
+                    <button id="btn-login-visitante" style="background: #3b82f6 !important; color: white !important; border: none !important; padding: 12px !important; border-radius: 8px !important; cursor: pointer !important; font-weight: bold !important; font-size: 1rem !important; display: block !important; width: 100% !important;">
+                        Iniciar Sesión
+                    </button>
+                    <button id="btn-cerrar-visitante" style="background: #cbd5e1 !important; color: #334155 !important; border: none !important; padding: 12px !important; border-radius: 8px !important; cursor: pointer !important; font-weight: bold !important; font-size: 1rem !important; display: block !important; width: 100% !important;">
+                        Continuar como visitante
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        // Evento para el botón Continuar como visitante
+        document.getElementById('btn-cerrar-visitante').addEventListener('click', () => {
+            modal.style.setProperty('display', 'none', 'important');
+        });
+
+        // Evento para ir al Login
+        document.getElementById('btn-login-visitante').addEventListener('click', () => {
+            window.location.href = '/index.html'; 
+        });
+    }
+    
+    // Mostramos el modal asegurando el display flex supremo
+    modal.style.setProperty('display', 'flex', 'important');
+};
 
 function renderizarImagenesNuevas() {
     if(!previewNuevas) return;
@@ -1196,45 +1331,46 @@ buscador.addEventListener('keydown', (e) => {
         confirmarBusqueda();
     }
 });
-// =========================================
-//  MODAL DE CREAR PUBLICACIÓN (ACTUALIZADO)
-// =========================================
+
+// ==========================================
+//  MODAL DE CREAR PUBLICACIÓN (OPTIMIZADO)
+// ==========================================
 
 const btnAbrirModalPub = document.getElementById('btnAbrirModalPublicar');
 const modalPublicacion = document.getElementById('modalPublicacion');
 const btnCerrarModalPub = document.getElementById('btnCerrarModalPublicar');
-// 🔥 Asume que tu botón de publicar tiene este ID, si no, cámbialo:
 const btnPublicarFinal = document.getElementById('btn-publish'); 
 const inputsFormulario = document.querySelectorAll('#modalPublicacion input, #modalPublicacion textarea, #modalPublicacion select');
 
-// 2. FUNCIÓN PARA LIMPIAR EL FORMULARIO
+// FUNCIÓN PARA LIMPIAR EL FORMULARIO (Evita fugas de datos viejos)
 function limpiarFormularioPublicacion() {
     inputsFormulario.forEach(input => {
         input.value = '';
-        input.classList.remove('input-error'); // Quitar errores si los hay
+        input.classList.remove('input-error'); 
     });
     
-    // Si tienes un contenedor de vista previa de imágenes al crear, límpialo aquí
+    // Limpieza de contenedores de imágenes
     const previewNuevas = document.getElementById('preview-container');
     if (previewNuevas) previewNuevas.innerHTML = '';
     
-    // Si usas una variable global para guardar los archivos de imagen, reiníciala (ej: nuevasImagenes = [];)
+    // 🔥 CORRECCIÓN: Resetea la variable global de imágenes para que no se arrastren al nuevo post
+    if (window.nuevasImagenesSubir) {
+        window.nuevasImagenesSubir = [];
+    }
     
-    verificarCamposLlenos(); // Vuelve a ocultar los botones
+    verificarCamposLlenos(); 
 }
 
-// 4. FUNCIÓN PARA MOSTRAR/OCULTAR BOTONES SI HAY TEXTO
+// FUNCIÓN PARA MOSTRAR/OCULTAR BOTONES DINÁMICAMENTE
 function verificarCamposLlenos() {
     let hayTexto = false;
     inputsFormulario.forEach(input => {
-        // Ignoramos inputs de tipo file para esta validación, o los incluimos si el usuario sube foto
-        if (input.value && input.value.trim() !== "") {
+        if (input.type !== 'file' && input.value && input.value.trim() !== "") {
             hayTexto = true;
         }
     });
 
     const btnGuardarBorrador = document.getElementById('btn-guardar-borrador');
-    
     
     if (hayTexto) {
         if(btnGuardarBorrador) btnGuardarBorrador.style.display = 'inline-block';
@@ -1245,7 +1381,7 @@ function verificarCamposLlenos() {
     }
 }
 
-// Escuchar cambios en los inputs para ocultar/mostrar botones en tiempo real
+// Escuchar cambios en tiempo real
 inputsFormulario.forEach(input => {
     input.addEventListener('input', verificarCamposLlenos);
     input.addEventListener('change', verificarCamposLlenos);
@@ -1253,11 +1389,12 @@ inputsFormulario.forEach(input => {
 
 if (btnAbrirModalPub) {
     btnAbrirModalPub.addEventListener('click', () => {
+        // Interceptores del Guardián de Visitantes
         if (typeof esVisitante === 'function' && esVisitante()) {
             mostrarModalVisitante();
             return;
         }
-        verificarCamposLlenos(); // Oculta botones al abrir si está vacío
+        verificarCamposLlenos(); 
         modalPublicacion.style.display = 'flex'; 
     });
 }
@@ -1265,19 +1402,19 @@ if (btnAbrirModalPub) {
 if (btnCerrarModalPub) {
     btnCerrarModalPub.addEventListener('click', () => {
         modalPublicacion.style.display = 'none';
-        limpiarFormularioPublicacion(); // Limpia al cerrar
+        limpiarFormularioPublicacion(); 
     });
 }
 
 window.addEventListener('click', (e) => {
     if (e.target === modalPublicacion) {
         modalPublicacion.style.display = 'none';
-        limpiarFormularioPublicacion(); // Limpia al cerrar por fuera
+        limpiarFormularioPublicacion(); 
     }
 });
 
 // ==========================================
-// 8. LÓGICA DE BORRADORES (NODE.JS / MYSQL - TABLA EXCLUSIVA)
+// 8. LÓGICA DE BORRADORES (NODE.JS / MYSQL)
 // ==========================================
 
 const btnVerBorradores = document.getElementById('btn-ver-borradores');
@@ -1287,121 +1424,118 @@ const listaBorradoresUl = document.getElementById('lista-borradores-ul');
 const btnVolverEdicion = document.getElementById('btn-volver-edicion');
 const formPublicacionBody = document.getElementById('cuerpo-formulario-publicacion');
 
-// Array temporal para guardar los borradores que traemos de la BD dedicada
 let borradoresActuales = [];
 
-// 1. ESCUCHAR GUARDADO DE BORRADORES (ENVÍO JSON AISLADO)
+// 1. GUARDAR BORRADOR
 document.addEventListener('click', async (e) => {
-    if (e.target && e.target.id === 'btn-guardar-borrador') {
+    const btnGuardar = e.target.closest('#btn-guardar-borrador');
+    if (!btnGuardar) return;
+
+    // Redirección elegante si es un visitante intruso
+    if (typeof esVisitante === 'function' && esVisitante()) {
+        mostrarModalVisitante();
+        return;
+    }
+
+    const nombreUsuario = localStorage.getItem('nombreUsuario') || localStorage.getItem('usuario'); 
+    if (!nombreUsuario) {
+        mostrarAlertaAnimada("⚠️ Debes iniciar sesión para guardar borradores.");
+        return;
+    }
+
+    const titulo = document.getElementById('postTitle')?.value.trim() || "";
+    const contenido = document.getElementById('postContent')?.value.trim() || "";
+
+    if (!titulo && !contenido) {
+        mostrarAlertaAnimada("⚠️ Escribe al menos un título o descripción para guardar.");
+        return;
+    }
+
+    const datosBorrador = {
+        autor: nombreUsuario,
+        titulo: titulo,
+        descripcion: contenido,
+        precio: document.getElementById('postPrice')?.value || "0",
+        estado: document.getElementById('postEstado')?.value || "", 
+        municipio: document.getElementById('postMunicipio')?.value || "",
+        categoria: document.getElementById('postCategoria')?.value || "",
+        condicion: document.getElementById('postCondicion')?.value || ""
+    };
+
+    const textoOriginal = btnGuardar.innerHTML;
+    btnGuardar.innerHTML = "Guardando...";
+    btnGuardar.disabled = true;
+
+    try {
+        const response = await fetch('/api/borradores', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(datosBorrador)
+        });
         
-        console.log("Guardando borrador en la tabla dedicada de la base de datos..."); 
-        
-        const nombreUsuario = localStorage.getItem('nombreUsuario') || localStorage.getItem('usuario'); 
-        
-        if (!nombreUsuario) {
-            alert("Debes iniciar sesión para guardar borradores.");
-            return;
+        const result = await response.json();
+
+        if (response.ok && result.id) {
+            mostrarAlertaAnimada("💾 ¡Borrador guardado con éxito!");
+            limpiarFormularioPublicacion();
+            if (modalPublicacion) modalPublicacion.style.display = 'none';
+        } else {
+            mostrarAlertaAnimada("❌ Error al guardar: " + (result.message || "Error desconocido"));
         }
-
-        const titulo = document.getElementById('postTitle')?.value.trim() || "";
-        const contenido = document.getElementById('postContent')?.value.trim() || "";
-
-        if (!titulo && !contenido) {
-            alert("Escribe al menos un título o descripción para guardar.");
-            return;
-        }
-
-        // Creamos un objeto JSON en lugar de FormData ya que no procesamos archivos binarios/imágenes aquí
-        const datosBorrador = {
-            autor: nombreUsuario,
-            titulo: titulo,
-            descripcion: contenido,
-            precio: document.getElementById('postPrice')?.value || "0",
-            estado: document.getElementById('postEstado')?.value || "", 
-            municipio: document.getElementById('postMunicipio')?.value || "",
-            categoria: document.getElementById('postCategoria')?.value || "",
-            condicion: document.getElementById('postCondicion')?.value || ""
-        };
-
-        try {
-            const response = await fetch('/api/borradores', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(datosBorrador)
-            });
-            
-            const result = await response.json();
-            console.log("Respuesta del servidor:", result); 
-
-            if (response.ok && result.id) {
-                if (typeof mostrarAlertaAnimada === 'function') {
-                    mostrarAlertaAnimada("💾 ¡Borrador guardado en la tabla de borradores!");
-                } else {
-                    alert("Borrador guardado exitosamente.");
-                }
-                
-                if (typeof limpiarFormularioPublicacion === 'function') limpiarFormularioPublicacion();
-                if (typeof modalPublicacion !== 'undefined' && modalPublicacion) modalPublicacion.style.display = 'none';
-            } else {
-                alert("Hubo un error al guardar el borrador: " + (result.message || "Error desconocido"));
-            }
-        } catch (error) {
-            console.error("Error en la petición de borrador:", error);
-            alert("No se pudo conectar con el servidor.");
-        }
+    } catch (error) {
+        console.error("Error en la petición de borrador:", error);
+        mostrarAlertaAnimada("❌ No se pudo conectar con el servidor.");
+    } finally {
+        btnGuardar.innerHTML = textoOriginal;
+        btnGuardar.disabled = false;
     }
 });
 
-// 2. ESCUCHAR VISUALIZACIÓN DE LISTA DE BORRADORES (CORREGIDO)
+// 2. VER LISTA DE BORRADORES
 if (btnVerBorradores) {
     btnVerBorradores.addEventListener('click', async () => {
-        const nombreUsuario = localStorage.getItem('nombreUsuario') || localStorage.getItem('usuario'); 
+        if (typeof esVisitante === 'function' && esVisitante()) {
+            mostrarModalVisitante();
+            return;
+        }
 
+        const nombreUsuario = localStorage.getItem('nombreUsuario') || localStorage.getItem('usuario'); 
         if (!nombreUsuario) {
-            alert("Inicia sesión para ver tus borradores.");
+            mostrarAlertaAnimada("⚠️ Inicia sesión para ver tus borradores.");
             return;
         }
 
         try {
-            console.log("Obteniendo borradores desde la tabla exclusiva del usuario...");
-            
-            // Apuntamos al endpoint configurado en el servidor
             const response = await fetch(`/api/borradores/usuario/${nombreUsuario}`);
-            
-            if (!response.ok) {
-                throw new Error("No se pudo obtener respuesta correcta del servidor");
-            }
+            if (!response.ok) throw new Error("Error en servidor");
 
             borradoresActuales = await response.json();
-            console.log("Borradores cargados para renderizar:", borradoresActuales);
-
             if (listaBorradoresUl) listaBorradoresUl.innerHTML = "";
 
             if (borradoresActuales.length === 0) {
                 if (listaBorradoresUl) {
-                    listaBorradoresUl.innerHTML = "<li class='borrador-vacio'>No tienes borradores guardados.</li>";
+                    listaBorradoresUl.innerHTML = "<li class='borrador-vacio' style='padding:15px; color:#666;'>No tienes borradores guardados.</li>";
                 }
             } else {
                 borradoresActuales.forEach(borrador => {
                     const li = document.createElement('li');
                     li.className = "borrador-card"; 
+                    li.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee;";
                     
-                    // Aseguramos que pinte la descripción de la propiedad correcta
                     const descripcionMuestra = borrador.descripcion || borrador.texto || 'Sin descripción disponible';
                     
                     li.innerHTML = `
-                        <div class="borrador-info">
+                        <div class="borrador-info" style="flex: 1; text-align: left;">
                             <span class="borrador-icon">✏️</span>
-                            <div class="borrador-textos">
+                            <div class="borrador-textos" style="display:inline-block; margin-left:10px;">
                                 <strong class="borrador-title">${borrador.titulo || 'Sin título'}</strong>
-                                <p class="borrador-desc">${descripcionMuestra}</p>
+                                <p class="borrador-desc" style="margin: 5px 0 0 0; color: #666; font-size: 0.9em;">${descripcionMuestra}</p>
                             </div>
                         </div>
-                        <button class="btn-editar-borrador btn-cargar-borrador" data-id="${borrador.id}">
-                            Editar
-                        </button>
+                        <div class="borrador-acciones" style="display: flex; gap: 10px;">
+                            <button class="btn-editar-borrador btn-cargar-borrador" data-id="${borrador.id}" style="padding: 6px 12px; cursor: pointer; background: #3b82f6; color: white; border: none; border-radius: 6px; font-weight:500;">Editar</button>
+                            <button class="btn-eliminar-borrador" data-id="${borrador.id}" style="padding: 6px 12px; cursor: pointer; background: #ef4444; color: white; border: none; border-radius: 6px; font-weight:500;">Borrar</button>
+                        </div>
                     `;
                     if (listaBorradoresUl) listaBorradoresUl.appendChild(li);
                 });
@@ -1412,12 +1546,12 @@ if (btnVerBorradores) {
 
         } catch (error) {
             console.error("Error al obtener los borradores:", error);
-            alert("No se pudieron cargar los borradores.");
+            mostrarAlertaAnimada("❌ No se pudieron cargar los borradores.");
         }
     });
 }
 
-// 3. BOTÓN VOLVER DESDE LA LISTA AL FORMULARIO LIMPIO
+// 3. BOTÓN VOLVER DESDE LA LISTA
 if (btnVolverEdicion) {
     btnVolverEdicion.addEventListener('click', () => {
         if (contenedorBorradores) contenedorBorradores.style.display = 'none';
@@ -1425,26 +1559,65 @@ if (btnVolverEdicion) {
     });
 }
 
-// 4. DELEGACIÓN DE EVENTOS PARA SELECCIONAR Y CARGAR UN BORRADOR ESPECÍFICO
+// 4. DELEGACIÓN DE EVENTOS: CARGAR O BORRAR BORRADOR
 document.addEventListener('click', (e) => {
+    // A. Lógica para CARGAR un borrador
     if (e.target && e.target.classList.contains('btn-cargar-borrador')) {
         const borradorId = parseInt(e.target.getAttribute('data-id'));
         const borradorSeleccionado = borradoresActuales.find(b => b.id === borradorId);
 
         if (borradorSeleccionado) {
-            // Mapeamos los campos contemplando si vienen de la tabla 'publicaciones' vieja o de la nueva tabla 'borradores'
             if (document.getElementById('postTitle')) document.getElementById('postTitle').value = borradorSeleccionado.titulo || "";
             if (document.getElementById('postContent')) document.getElementById('postContent').value = borradorSeleccionado.descripcion || borradorSeleccionado.texto || "";
             if (document.getElementById('postPrice')) document.getElementById('postPrice').value = borradorSeleccionado.precio || "";
-            if (document.getElementById('postEstado')) document.getElementById('postEstado').value = borradorSeleccionado.estado_republica || borradorSeleccionado.estado || "";
-            if (document.getElementById('postMunicipio')) document.getElementById('postMunicipio').value = borradorSeleccionado.municipio || "";
             if (document.getElementById('postCategoria')) document.getElementById('postCategoria').value = borradorSeleccionado.categoria || "";
             if (document.getElementById('postCondicion')) document.getElementById('postCondicion').value = borradorSeleccionado.condicion || "";
+
+            // ⚡ CORRECCIÓN MAESTRA: Sincronizar selectores dinámicos de Ubicación
+            const inputEstado = document.getElementById('postEstado');
+            if (inputEstado) {
+                inputEstado.value = borradorSeleccionado.estado_republica || borradorSeleccionado.estado || "";
+                // Forzamos el evento 'change' para que se renderice el sub-combo de municipios
+                inputEstado.dispatchEvent(new Event('change'));
+            }
+            
+            // Ahora que los municipios existen en el DOM, asignamos el valor correspondiente
+            if (document.getElementById('postMunicipio')) {
+                document.getElementById('postMunicipio').value = borradorSeleccionado.municipio || "";
+            }
 
             if (contenedorBorradores) contenedorBorradores.style.display = 'none';
             if (formPublicacionBody) formPublicacionBody.style.display = 'block';
             
-            if (typeof verificarCamposLlenos === 'function') verificarCamposLlenos();
+            verificarCamposLlenos();
         }
+    }
+
+    // B. Lógica para BORRAR un borrador
+    if (e.target && e.target.classList.contains('btn-eliminar-borrador')) {
+        const borradorId = e.target.getAttribute('data-id');
+
+        AgoraModals.confirm(
+            "Borrar borrador", 
+            "¿Seguro que deseas borrar este borrador? Esta acción no se puede deshacer.", 
+            "Borrar", 
+            async () => {
+                try {
+                    const res = await fetch(`/api/borradores/${borradorId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if(res.ok) {
+                        mostrarAlertaAnimada("🗑️ Borrador eliminado.");
+                        if (btnVerBorradores) btnVerBorradores.click();
+                    } else {
+                        mostrarAlertaAnimada("❌ Error al eliminar el borrador.");
+                    }
+                } catch(err) {
+                    console.error(err);
+                    mostrarAlertaAnimada("❌ Error de conexión al eliminar.");
+                }
+            }
+        );
     }
 });
