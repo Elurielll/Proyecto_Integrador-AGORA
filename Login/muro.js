@@ -1076,7 +1076,8 @@ document.getElementById('btn-guardar-edicion')?.addEventListener('click', async 
         if(res.ok) {
             modalEditar.classList.remove('show');
             if (typeof cargarPosts === 'function') cargarPosts(); 
-            mostrarAlertaAnimada("¡Publicación actualizada con éxito!");
+            //Corregida la alerta animada al actualizar la publicación!
+            mostrarAlertaAnimada("¡Publicación actualizada con éxito!", 'exito');
         } else {
             mostrarAlertaAnimada("Error en el servidor al actualizar.");
         }
