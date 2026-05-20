@@ -82,6 +82,52 @@ document.addEventListener('click', function(e) {
     }
 }, true); // El true activa la fase de captura precoz para adelantarse a otros scripts
 
+function obtenerTiempoTranscurrido(fechaSQL) {
+    if (!fechaSQL) return '';
+
+    // Convertimos la fecha que manda MySQL a un objeto Date de JS
+    const fecha = new Date(fechaSQL);
+    const ahora = new Date();
+    
+    // Calculamos la diferencia en segundos
+    const segundos = Math.floor((ahora - fecha) / 1000);
+
+    // Definimos los intervalos en segundos
+    let intervalo = segundos / 31536000; // Años
+    if (intervalo >= 1) {
+        const años = Math.floor(intervalo);
+        return años === 1 ? "Hace 1 año" : `Hace ${años} años`;
+    }
+
+    intervalo = segundos / 2592000; // Meses
+    if (intervalo >= 1) {
+        const meses = Math.floor(intervalo);
+        return meses === 1 ? "Hace 1 mes" : `Hace ${meses} meses`;
+    }
+
+    intervalo = segundos / 86400; // Días
+    if (intervalo >= 1) {
+        const dias = Math.floor(intervalo);
+        if (dias === 1) return "Ayer";
+        return `Hace ${dias} días`;
+    }
+
+    intervalo = segundos / 3600; // Horas
+    if (intervalo >= 1) {
+        const horas = Math.floor(intervalo);
+        return horas === 1 ? "Hace 1 hora" : `Hace ${horas} horas`;
+    }
+
+    intervalo = segundos / 60; // Minutos
+    if (intervalo >= 1) {
+        const minutos = Math.floor(intervalo);
+        return minutos === 1 ? "Hace 1 minuto" : `Hace ${minutos} minutos`;
+    }
+
+    return "Hace un momento";
+}
+
+
 // ==========================================================================
 // CONFIGURACIÓN INICIAL Y VARIABLES GLOBALES
 // ==========================================================================
@@ -464,7 +510,7 @@ function renderizarPostsEnMuro() {
     
     postsDiv.innerHTML = ""; 
     
-    let postsAVisualizar = [...postsCargados].reverse();
+    let postsAVisualizar = [...postsCargados];
 
     if (typeof categoriaActual !== 'undefined' && categoriaActual !== "todas") {
         postsAVisualizar = postsAVisualizar.filter(post => post.categoria === categoriaActual);
@@ -552,7 +598,7 @@ function renderizarPostsEnMuro() {
         }
         htmlComentarios += '</div>';
 
-        const tiempoPost = post.fecha || "";
+        const tiempoPost = obtenerTiempoTranscurrido(post.fecha_publicacion);
         const etiquetaCategoria = post.categoria ? `<span style="background: #f1f5f9; color: #475569; padding: 4px 12px; border-radius: 16px; font-size: 0.8rem; font-weight: 600; border: 1px solid #e2e8f0;">🏷️ ${post.categoria}</span>` : '';
 
         let iconoCondicion = '';
@@ -670,7 +716,7 @@ function actualizarVistaModal(post) {
     } else {
         comentarios.forEach((c, index) => {
             const esMio = c.autor === obtenerNombreUsuario();
-            const tiempoComentario = c.fecha || "";
+            const tiempoComentario = obtenerTiempoTranscurrido(c.fecha);
             
             let htmlAcciones = '';
             if (esMio) {
