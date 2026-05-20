@@ -1,0 +1,129 @@
+/* ========================================================================== */
+/* ESTILOS DEL CHAT (chat.css)                                                */
+/* ========================================================================== */
+body {
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: #e6ecf0;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+#chat-container {
+    width: 95%;
+    max-width: 900px;
+    height: 85vh;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+header {
+    background-color: #4a6a91;
+    padding: 12px 20px;
+}
+
+.perfil-link {
+    text-decoration: none;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: fit-content;
+}
+
+.perfil-link:hover { opacity: 0.9; }
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    background-color: #cbd5e0;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 18px;
+    color: #4a6a91;
+}
+
+.user-info h3 { margin: 0; font-size: 15px; font-weight: 600; }
+.user-info p { margin: 0; font-size: 11px; color: #d1d9e6; }
+
+#chat-window {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    background-color: #f0f2f5;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.bubble {
+    max-width: 65%;
+    padding: 10px 14px;
+    font-size: 14px;
+    position: relative;
+    line-height: 1.4;
+}
+
+.others {
+    align-self: flex-start;
+    background-color: white;
+    color: #333;
+    border-radius: 15px 15px 15px 4px;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+}
+
+.me {
+    align-self: flex-end;
+    background-color: #4a6a91;
+    color: white;
+    border-radius: 15px 15px 4px 15px;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+}
+
+.hora {
+    font-size: 10px;
+    display: block;
+    margin-top: 4px;
+    text-align: right;
+    opacity: 0.6;
+}
+
+#input-form {
+    padding: 15px 20px;
+    background: white;
+    border-top: 1px solid #eee;
+    display: flex;
+    gap: 10px;
+}
+
+#input-msg {
+    flex: 1;
+    padding: 12px 18px;
+    border-radius: 20px;
+    border: 1px solid #e0e0e0;
+    background-color: #f1f3f4;
+    outline: none;
+}
+
+#send-btn {
+    background-color: #4a6a91;
+    color: white;
+    border: none;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#send-btn:hover { background-color: #3b5677; }
