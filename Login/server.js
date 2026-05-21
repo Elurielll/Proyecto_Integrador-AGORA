@@ -370,22 +370,50 @@ app.post('/comentar', (req, res) => {
 app.post('/editar-comentario', (req, res) => {
     const { idComentario, nuevoTexto, id_usuario } = req.body;
     
-    const sql = 'UPDATE comentarios SET comentario = ? WHERE Id = ? AND id_usuario = ?';
+    // 🕵️‍♂️ Chivato para la terminal
+    console.log("✏️ Intento de editar comentario:", req.body);
+
+    // Corregido: "id" en minúscula
+    const sql = 'UPDATE comentarios SET comentario = ? WHERE id = ? AND id_usuario = ?';
     
     db.query(sql, [nuevoTexto, idComentario, id_usuario], (err, result) => {
-        if (err || result.affectedRows === 0) return res.status(403).json({ message: "No se pudo editar" });
+        if (err) {
+            console.error("❌ Error SQL al editar comentario:", err);
+            return res.status(500).json({ message: "Error interno en la base de datos" });
+        }
+        
+        if (result.affectedRows === 0) {
+            console.log("⚠️ Fallo al editar: ¿El comentario no existe o el ID de usuario no coincide?");
+            return res.status(403).json({ message: "No tienes permiso para editar esto o el comentario ya no existe" });
+        }
+        
+        console.log("✅ Comentario editado exitosamente.");
         res.status(200).json({ message: "Comentario editado" });
     });
 });
 
 app.post('/borrar-comentario', (req, res) => {
-    const { idComentario, id_usuario } = req.body; 
+    const { idComentario, id_usuario } = req.body;
     
-    // Solo borra si el ID del comentario y el ID del usuario coinciden (dueño)
-    const sql = 'DELETE FROM comentarios WHERE Id = ? AND id_usuario = ?';
+    // 🕵️‍♂️ Chivato para la terminal: ver qué está mandando exactamente el frontend
+    console.log("🗑️ Intento de borrar comentario:", req.body);
+
+    // Corregido: "id" en minúscula para hacer match exacto con la DB
+    const sql = 'DELETE FROM comentarios WHERE id = ? AND id_usuario = ?';
     
     db.query(sql, [idComentario, id_usuario], (err, result) => {
-        if (err || result.affectedRows === 0) return res.status(403).json({ message: "No se pudo eliminar" });
+        if (err) {
+            console.error("❌ Error SQL al borrar comentario:", err);
+            return res.status(500).json({ message: "Error interno en la base de datos" });
+        }
+        
+        // Si no se afectó ninguna fila, significa que los IDs no hicieron match
+        if (result.affectedRows === 0) {
+            console.log("⚠️ Fallo al borrar: ¿El comentario no existe o el ID de usuario no coincide?");
+            return res.status(403).json({ message: "No tienes permiso para borrar esto o el comentario ya no existe" });
+        }
+        
+        console.log("✅ Comentario borrado exitosamente.");
         res.status(200).json({ message: "Comentario eliminado" });
     });
 });

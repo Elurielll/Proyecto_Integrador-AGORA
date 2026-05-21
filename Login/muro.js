@@ -43,7 +43,7 @@ const mostrarModalVisitante = () => {
 
         // Acción: Iniciar Sesión (Redirecciona)
         document.getElementById('btn-login-go').addEventListener('click', () => {
-            window.location.href = '/index.html';
+            window.location.replace('/index.html');
         });
     }
     
@@ -250,10 +250,22 @@ enlacesCategorias.forEach(enlace => {
 // 1.6 LÓGICA DEL MENÚ DE PERFIL Y CERRAR SESIÓN
 // ==========================================================================
 document.addEventListener('DOMContentLoaded', () => {
+
+    // 🔥 1. VALIDACIÓN VISUAL INICIAL PARA VISITANTES 🔥
+    const usuarioActual = localStorage.getItem('nombreUsuario');
+    
+    if (!usuarioActual) {
+        console.log("Agora: Navegando en modo visitante.");
+    }
+
+    // ==========================================================
+    // 2. LÓGICA DEL MENÚ DE PERFIL (Tu código original intacto)
+    // ==========================================================
     const btnPerfil = document.getElementById('btn-menu-perfil');
     const menuPerfil = document.getElementById('dropdown-perfil');
 
     if (btnPerfil && menuPerfil) {
+        
         // 1. Abrir/Cerrar menú al dar clic en la foto
         btnPerfil.addEventListener('click', (e) => {
             e.stopPropagation(); // Evita que el clic se propague y cierre el menú
@@ -284,18 +296,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnVerPerfil = document.getElementById('ver-mi-perfil');
         if (btnVerPerfil) {
             btnVerPerfil.addEventListener('click', () => {
-                window.location.href = 'perfil.html'; // Cambia si tu archivo se llama diferente
+                window.location.href = 'perfil.html';
             });
         }
 
-        // 4. Acción del botón "Cerrar Sesión" (Usando tu alerta personalizada)
+        // 4. Acción del botón "Cerrar Sesión"
         const btnCerrarSesion = document.getElementById('cerrar-sesion');
         if (btnCerrarSesion) {
             btnCerrarSesion.addEventListener('click', () => {
                 // Escondemos el menú primero para que no estorbe
                 menuPerfil.style.display = 'none';
 
-                // Llamamos a la función que creaste con el emoji de la puerta 🚪
+                // Llamamos a la función con el emoji de la puerta 🚪
                 mostrarAlertaCerrarSesion();
             });
         }
@@ -760,9 +772,10 @@ function actualizarVistaModal(post) {
                         <button onclick="toggleMenuComentario(${index})" style="background: transparent; border: none; cursor: pointer; color: #64748b; font-size: 1.3rem; padding: 0 4px; font-weight: bold; outline: none;">⋮</button>
                         
                         <div id="menu-comentario-${index}" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 10; width: 110px; margin-top: 2px;">
-                            <button onclick="editarComentario(${post.id}, ${index}, '${c.texto.replace(/'/g, "\\'")}')" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; cursor: pointer; color: #334155; font-size: 0.85rem; border-bottom: 1px solid #f1f5f9;">✏️ Editar</button>
-                            <button onclick="borrarComentario(${post.id}, ${index})" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; cursor: pointer; color: #ef4444; font-size: 0.85rem;">🗑️ Borrar</button>
-                        </div>
+    <button onclick="editarComentario(${post.id}, ${c.id}, '${c.texto.replace(/'/g, "\\'")}')" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; cursor: pointer; color: #334155; font-size: 0.85rem; border-bottom: 1px solid #f1f5f9;">✏️ Editar</button>
+    
+    <button onclick="borrarComentario(${post.id}, ${c.id})" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; cursor: pointer; color: #ef4444; font-size: 0.85rem;">🗑️ Borrar</button>
+</div>
                     </div>
                 `;
             }
@@ -873,9 +886,9 @@ document.getElementById('fb-comment-btn')?.addEventListener('click', async () =>
     } catch(e) { console.error("Error al comentar", e); }
 });
 
-window.borrarComentario = (postId, indexComentario) => {
-    // 🔥 Recuperamos el ID
+window.borrarComentario = (postId, idComentario) => { // ⬅️ CAMBIO: Ahora pedimos idComentario
     const idUsuario = localStorage.getItem('userId');
+    const idPostNumerico = parseInt(postId, 10);
 
     AgoraModals.confirm("Borrar comentario", "¿Seguro que deseas borrar este comentario? Esta acción no se puede deshacer.", "Borrar", async () => {
         try {
@@ -883,41 +896,71 @@ window.borrarComentario = (postId, indexComentario) => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    postId, 
-                    indexComentario,
-                    id_usuario: idUsuario // 🔥 Se lo pasamos al backend
+                    postId: idPostNumerico, 
+                    idComentario: idComentario, // ✅ CAMBIO: Ahora enviamos el ID real que el backend pide
+                    id_usuario: idUsuario 
                 })
             });
+            
             if(res.ok) {
-                await cargarPosts();
-                actualizarVistaModal(postsCargados.find(p => p.id === postId));
+                await cargarPosts(); // Trae el nuevo estado del servidor
+                
+                const postActualizado = postsCargados.find(p => p.id == idPostNumerico);
+                
+                if (postActualizado) {
+                    if (typeof actualizarVistaModal === 'function') actualizarVistaModal(postActualizado);
+                }
+                
+                // Forzar refresco del muro principal por si acaso
+                if (typeof renderizarPostsEnMuro === 'function') renderizarPostsEnMuro();
+                
+            } else {
+                mostrarAlertaAnimada("Error en el servidor al intentar borrar el comentario.");
             }
-        } catch(e) {}
+        } catch(e) { 
+            console.error("Error de conexión borrando:", e); 
+            mostrarAlertaAnimada("No se pudo conectar con el servidor.");
+        }
     });
 };
 
-window.editarComentario = (postId, indexComentario, textoViejo) => {
-    // 🔥 Recuperamos el ID
+window.editarComentario = (postId, idComentario, textoViejo) => { // ⬅️ CAMBIO: Recibe idComentario
     const idUsuario = localStorage.getItem('userId');
+    const idPostNumerico = parseInt(postId, 10);
 
     AgoraModals.prompt("Edita tu comentario:", textoViejo, async (nuevoTexto) => {
-        if(!nuevoTexto || nuevoTexto === textoViejo) return;
+        if(!nuevoTexto || nuevoTexto.trim() === "" || nuevoTexto === textoViejo) return;
+        
         try {
             const res = await fetch('/editar-comentario', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    postId, 
-                    indexComentario, 
-                    nuevoTexto,
-                    id_usuario: idUsuario // 🔥 Se lo pasamos al backend
+                    postId: idPostNumerico, 
+                    idComentario: idComentario, // ✅ CAMBIO: Enviamos la variable correcta
+                    nuevoTexto: nuevoTexto.trim(),
+                    id_usuario: idUsuario 
                 })
             });
+            
             if(res.ok) {
                 await cargarPosts();
-                actualizarVistaModal(postsCargados.find(p => p.id === postId));
+                
+                const postActualizado = postsCargados.find(p => p.id == idPostNumerico);
+                
+                if (postActualizado) {
+                    if (typeof actualizarVistaModal === 'function') actualizarVistaModal(postActualizado);
+                }
+                
+                if (typeof renderizarPostsEnMuro === 'function') renderizarPostsEnMuro();
+                
+            } else {
+                mostrarAlertaAnimada("Error en el servidor al intentar editar el comentario.");
             }
-        } catch(e) {}
+        } catch(e) { 
+            console.error("Error de conexión editando:", e);
+            mostrarAlertaAnimada("No se pudo conectar con el servidor.");
+        }
     });
 };
 
@@ -1327,15 +1370,20 @@ function mostrarAlertaCerrarSesion() {
         `;
         document.body.appendChild(modalLogout);
 
+        // Evento Cancelar
         document.getElementById('btn-cancelar-logout').addEventListener('click', () => {
             modalLogout.classList.remove('activo');
             setTimeout(() => modalLogout.remove(), 300);
         });
 
+        // Evento Confirmar (¡AQUÍ ESTÁ EL CAMBIO! 🚀)
         document.getElementById('btn-confirmar-logout').addEventListener('click', () => {
+            // Limpiamos datos
             localStorage.removeItem('nombreUsuario');
             localStorage.removeItem('userRole');
-            window.location.href = '/index.html';
+            
+            // Redirección limpia reemplazando el historial del navegador
+            window.location.replace('/index.html');
         });
     }
 }
