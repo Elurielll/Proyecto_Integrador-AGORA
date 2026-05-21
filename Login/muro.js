@@ -700,45 +700,111 @@ window.abrirVisor = (postId, indexClick) => {
     if(fbModal) fbModal.classList.add('show');
 };
 
+// ==========================================================================
+// RENDERIZADO DE LA MODAL (VISOR DE IMÁGENES + COMENTARIOS)
+// ==========================================================================
+
 function actualizarVistaModal(post) {
     if (post.imagenes && post.imagenes.length > 0) {
         fbModalImg.src = post.imagenes[currentIndexVisor];
     }
     
-    const commentsDiv = document.getElementById('fb-sidebar-comments');
-    if (!commentsDiv) return;
+    const sidebarDiv = document.getElementById('fb-sidebar-comments');
+    if (!sidebarDiv) return;
     
-    commentsDiv.innerHTML = '';
+    // Limpiamos el panel
+    sidebarDiv.innerHTML = '';
+    sidebarDiv.style.padding = '0';
+    sidebarDiv.style.margin = '0';
+
+    // --- 2. INFO PUBLICACIÓN ---
+    const tiempoPost = obtenerTiempoTranscurrido(post.fecha_publicacion);
+    let htmlInfoPost = `
+        <div style="background-color: #e6f7ff; border: 1px solid #b3e0ff; padding: 16px; width: 100%; box-sizing: border-box; border-top: none; margin-bottom: 0;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <div style="width: 36px; height: 36px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; border: 1px solid #e2e8f0;">👤</div>
+                <div style="display: flex; flex-direction: column; line-height: 1.3;">
+                    <span style="font-weight: 700; color: #0f172a; font-size: 0.95rem; font-family: sans-serif;">${post.autor}</span>
+                    <span style="color: #64748b; font-size: 0.8rem;">· ${tiempoPost}</span>
+                </div>
+            </div>
+            <div style="color: #334155; font-family: sans-serif; text-align: left;">
+                ${post.precio ? `<div style="font-size: 1.25rem; color: #10b981; font-weight: 900; margin-bottom: 4px;">$${post.precio}</div>` : ''}
+                ${post.titulo ? `<div style="margin: 0 0 6px 0; color: #0f172a; font-size: 1.05rem; font-weight: 700;">${post.titulo}</div>` : ''}
+                <div style="margin: 0; color: #475569; line-height: 1.5; font-size: 0.95rem; white-space: pre-wrap;">${post.texto}</div>
+            </div>
+        </div>
+    `;
+    sidebarDiv.innerHTML += htmlInfoPost;
+
+    // --- 3. COMENTARIOS (Diseño corregido) ---
+    const contenedorInternoComentarios = document.createElement('div');
+    // Usamos display: block en lugar de flex para evitar choques con tu CSS
+    contenedorInternoComentarios.style.cssText = "width: 100%; box-sizing: border-box; padding: 16px; display: block;";
+    sidebarDiv.appendChild(contenedorInternoComentarios);
+
     const comentarios = post.comentarios || [];
     
     if (comentarios.length === 0) {
-        commentsDiv.innerHTML = '<p style="color: #64748b; font-size: 0.9rem; text-align: center; margin-top: 20px;">Sin comentarios aún. ¡Sé el primero!</p>';
+        contenedorInternoComentarios.innerHTML = '<p style="color: #94a3b8; font-size: 0.9rem; margin: 0; font-family: sans-serif;">Sin comentarios aún. ¡Sé el primero!</p>';
     } else {
         comentarios.forEach((c, index) => {
             const esMio = c.autor === obtenerNombreUsuario();
-            const tiempoComentario = obtenerTiempoTranscurrido(c.fecha);
+            const tiempoComentario = obtenerTiempoTranscurrido(c.fecha); 
             
             let htmlAcciones = '';
             if (esMio) {
+                // Menú de 3 puntos flotando a la derecha con float: right
                 htmlAcciones = `
-                    <div style="font-size: 0.75rem; margin-top: 3px; display:flex; gap: 8px;">
-                        <button onclick="editarComentario(${post.id}, ${index}, '${c.texto.replace(/'/g, "\\'")}')" style="background:none; border:none; color:#3b82f6; cursor:pointer; padding:0;">Editar</button>
-                        <button onclick="borrarComentario(${post.id}, ${index})" style="background:none; border:none; color:#ef4444; cursor:pointer; padding:0;">Borrar</button>
+                    <div style="position: relative; float: right;">
+                        <button onclick="toggleMenuComentario(${index})" style="background: transparent; border: none; cursor: pointer; color: #64748b; font-size: 1.3rem; padding: 0 4px; font-weight: bold; outline: none;">⋮</button>
+                        
+                        <div id="menu-comentario-${index}" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 10; width: 110px; margin-top: 2px;">
+                            <button onclick="editarComentario(${post.id}, ${index}, '${c.texto.replace(/'/g, "\\'")}')" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; cursor: pointer; color: #334155; font-size: 0.85rem; border-bottom: 1px solid #f1f5f9;">✏️ Editar</button>
+                            <button onclick="borrarComentario(${post.id}, ${index})" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; cursor: pointer; color: #ef4444; font-size: 0.85rem;">🗑️ Borrar</button>
+                        </div>
                     </div>
                 `;
             }
 
-            commentsDiv.innerHTML += `
-                <div style="margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
-                    <strong style="color: #0f172a; font-size: 0.9rem;">${c.autor}</strong> 
-                    <span style="color: #94a3b8; font-size: 0.75rem; margin-left: 5px;">${tiempoComentario}</span>
-                    <p style="margin: 3px 0; font-size: 0.9rem; color: #334155;">${c.texto}</p>
-                    ${htmlAcciones}
+            // Burbuja del comentario
+            contenedorInternoComentarios.innerHTML += `
+                <div style="margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; font-family: sans-serif; clear: both;">
+                    
+                    <div style="margin-bottom: 4px;">
+                        ${htmlAcciones}
+                        <span style="font-weight: 700; color: #0f172a; font-size: 0.9rem; margin-right: 6px;">${c.autor}</span> 
+                        <span style="color: #94a3b8; font-size: 0.75rem;">· ${tiempoComentario}</span>
+                    </div>
+
+                    <p style="margin: 0; font-size: 0.9rem; color: #334155; line-height: 1.4; word-break: break-word;">${c.texto}</p>
                 </div>
             `;
         });
     }
 }
+
+// --- FUNCIONES EXTRA PARA CONTROLAR EL MENÚ ---
+
+function toggleMenuComentario(index) {
+    const menu = document.getElementById('menu-comentario-' + index);
+    const estaOculto = menu.style.display === 'none' || menu.style.display === '';
+    
+    // Ocultar cualquier otro menú que esté abierto
+    document.querySelectorAll('[id^="menu-comentario-"]').forEach(el => el.style.display = 'none');
+    
+    // Si estaba oculto, lo mostramos
+    if (estaOculto) {
+        menu.style.display = 'block';
+    }
+}
+
+// Cerrar el menú si el usuario hace clic en cualquier otra parte de la pantalla
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('[id^="menu-comentario-"]') && !event.target.textContent.includes('⋮')) {
+        document.querySelectorAll('[id^="menu-comentario-"]').forEach(el => el.style.display = 'none');
+    }
+});
 
 function navegarVisor(direccion) {
     const post = postsCargados.find(p => p.id === currentPostIdVisor);
