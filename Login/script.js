@@ -1,3 +1,14 @@
+// --- CONTROL DE HISTORIAL: Limpia el login al regresar con botón atrás ---
+window.addEventListener('pageshow', function (evento) {
+    // Si el usuario regresa a esta pantalla usando la flecha "Atrás"
+    if (evento.persisted) {
+        const formularioLogin = document.getElementById('login-form');
+        if (formularioLogin) {
+            formularioLogin.reset(); // Vacía el correo y la contraseña al instante
+        }
+    }
+});
+
 // --- FUNCIÓN DE VENTANA MODAL DE ÉXITO ---
 function mostrarAlertaExito(mensaje, destinoUrl = null) {
     const modal = document.getElementById('modalExito');
@@ -63,7 +74,7 @@ loginForm.addEventListener('submit', async (e) => {
             localStorage.setItem('nombreUsuario', data.nombre);
             localStorage.setItem('userRole', data.role);
             
-            // 🔥 ESTA ES LA LÍNEA CLAVE: Guardamos el ID del usuario
+            // Guardamos el ID del usuario
             localStorage.setItem('userId', data.id); 
 
             if (data.role === 'admin_server') {
