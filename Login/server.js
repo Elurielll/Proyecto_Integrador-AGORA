@@ -94,17 +94,6 @@ app.post('/register', (req, res) => {
         res.status(200).send("Registro exitoso");
     });
 });
-    
-    db.query(sql, [fullname, email_reg, password_reg], (err, result) => {
-        if (err) {
-            console.error('❌ Error al insertar en MySQL (Registro):', err);
-            return res.status(500).send("Error en el servidor al registrar");
-        }
-        
-        registrarEvento(fullname, "user", "Registro Nuevo", `Email: ${email_reg}`);
-        res.status(200).send("Registro exitoso");
-    });
-});
 
 app.post('/login', (req, res) => {
     const { email, password } = req.body;
