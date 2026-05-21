@@ -74,8 +74,26 @@ const MODERADOR = { email: "mod@agora.com", pass: "mod123", role: "moderador", n
 app.post('/register', (req, res) => {
     const { fullname, email_reg, password_reg } = req.body;
 
-    // CORREGIDO: Ahora apunta a la tabla usuarios con sus 3 valores correspondientes
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&._-])[A-Za-z\d@$!%*#?&._-]{1,8}$/;
+
+    if (!passwordRegex.test(password_reg)) {
+        return res.status(400).json({
+            message: "La contraseña debe tener máximo 8 caracteres, incluir letras, números y símbolos."
+        });
+    }
+
     const sql = `INSERT INTO usuarios (nombre, correo, contrasena) VALUES (?, ?, ?)`;
+    
+    db.query(sql, [fullname, email_reg, password_reg], (err, result) => {
+        if (err) {
+            console.error('❌ Error al insertar en MySQL (Registro):', err);
+            return res.status(500).send("Error en el servidor al registrar");
+        }
+        
+        registrarEvento(fullname, "user", "Registro Nuevo", `Email: ${email_reg}`);
+        res.status(200).send("Registro exitoso");
+    });
+});
     
     db.query(sql, [fullname, email_reg, password_reg], (err, result) => {
         if (err) {
