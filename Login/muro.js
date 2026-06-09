@@ -1,3 +1,133 @@
+// ========================================================
+// 🔒 INTERCEPTOR SUPREMO PARA VISITANTES (CON MENÚ PERFIL)
+// ========================================================
+
+// 1. Validamos si es un visitante real
+const esVisitante = () => {
+    const rol = localStorage.getItem('userRole');
+    const id = localStorage.getItem('userId');
+    return !id || !rol || rol === 'visitante';
+};
+
+// 2. Creamos el modal con estilos blindados (independientes de tu CSS)
+const mostrarModalVisitante = () => {
+    let modal = document.getElementById('modal-visitante-supremo');
+    
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-visitante-supremo';
+        modal.style.cssText = 'position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background: rgba(0,0,0,0.6) !important; z-index: 999999 !important; display: flex !important; align-items: center !important; justify-content: center !important; font-family: sans-serif !important;';
+        
+        modal.innerHTML = `
+            <div style="background: white !important; text-align: center !important; padding: 30px !important; border-radius: 16px !important; box-shadow: 0 20px 40px rgba(0,0,0,0.3) !important; max-width: 90% !important; width: 360px !important; box-sizing: border-box !important;">
+                <div style="font-size: 3.5rem !important; margin-bottom: 15px !important;">🔒</div>
+                <p style="margin: 0 0 25px 0 !important; font-size: 1.2rem !important; color: #1e293b !important; font-weight: bold !important; line-height: 1.4 !important;">
+                    Para realizar esta acción debes iniciar sesión primero
+                </p>
+                <div style="display: flex !important; flex-direction: column !important; gap: 10px !important;">
+                    <button id="btn-login-go" style="background: #3b82f6 !important; color: white !important; border: none !important; padding: 12px !important; border-radius: 8px !important; cursor: pointer !important; font-weight: bold !important; font-size: 1rem !important; width: 100% !important; transition: background 0.2s;">
+                        Iniciar sesión
+                    </button>
+                    <button id="btn-visitor-continue" style="background: #e2e8f0 !important; color: #334155 !important; border: none !important; padding: 12px !important; border-radius: 8px !important; cursor: pointer !important; font-weight: bold !important; font-size: 1rem !important; width: 100% !important; transition: background 0.2s;">
+                        Continuar como visitante
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        // Acción: Continuar como visitante (Cierra la alerta)
+        document.getElementById('btn-visitor-continue').addEventListener('click', () => {
+            modal.style.setProperty('display', 'none', 'important');
+        });
+
+        // Acción: Iniciar Sesión (Redirecciona)
+        document.getElementById('btn-login-go').addEventListener('click', () => {
+            window.location.replace('/index.html');
+        });
+    }
+    
+    modal.style.setProperty('display', 'flex', 'important');
+};
+
+// 3. Captura los clics ANTES de que los botones ejecuten su código original
+document.addEventListener('click', function(e) {
+    // Si NO es visitante, ignoramos el guardián y dejamos pasar el clic normal
+    if (!esVisitante()) return;
+
+    const el = e.target;
+
+    // Detectar clic en el botón "¿Que vamos a publicar hoy?"
+    const esBotonPublicar = el.textContent.includes('publicar hoy') || 
+                            el.closest('button')?.textContent.includes('publicar hoy');
+
+    // Detectar clic en la barra de "Agregar un comentario..."
+    const esInputComentario = el.placeholder?.includes('comentario') || 
+                              el.closest('[placeholder*="comentario"]') ||
+                              el.textContent.includes('comentario...');
+
+    // Detectar clic en el icono de perfil usando su ID o clase exacta
+    const esIconoPerfil = el.id === 'btn-menu-perfil' || 
+                          el.closest('#btn-menu-perfil') || 
+                          el.classList.contains('btn-perfil-top') || 
+                          el.closest('.btn-perfil-top');
+
+    // 🔥 Si coincide con cualquiera de las 3 acciones, congelamos el navegador
+    if (esBotonPublicar || esInputComentario || esIconoPerfil) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation(); // Frena los modals y eventos originales en seco
+        
+        mostrarModalVisitante();
+    }
+}, true); // El true activa la fase de captura precoz para adelantarse a otros scripts
+
+function obtenerTiempoTranscurrido(fechaSQL) {
+    if (!fechaSQL) return '';
+
+    // Convertimos la fecha que manda MySQL a un objeto Date de JS
+    const fecha = new Date(fechaSQL);
+    const ahora = new Date();
+    
+    // Calculamos la diferencia en segundos
+    const segundos = Math.floor((ahora - fecha) / 1000);
+
+    // Definimos los intervalos en segundos
+    let intervalo = segundos / 31536000; // Años
+    if (intervalo >= 1) {
+        const años = Math.floor(intervalo);
+        return años === 1 ? "Hace 1 año" : `Hace ${años} años`;
+    }
+
+    intervalo = segundos / 2592000; // Meses
+    if (intervalo >= 1) {
+        const meses = Math.floor(intervalo);
+        return meses === 1 ? "Hace 1 mes" : `Hace ${meses} meses`;
+    }
+
+    intervalo = segundos / 86400; // Días
+    if (intervalo >= 1) {
+        const dias = Math.floor(intervalo);
+        if (dias === 1) return "Ayer";
+        return `Hace ${dias} días`;
+    }
+
+    intervalo = segundos / 3600; // Horas
+    if (intervalo >= 1) {
+        const horas = Math.floor(intervalo);
+        return horas === 1 ? "Hace 1 hora" : `Hace ${horas} horas`;
+    }
+
+    intervalo = segundos / 60; // Minutos
+    if (intervalo >= 1) {
+        const minutos = Math.floor(intervalo);
+        return minutos === 1 ? "Hace 1 minuto" : `Hace ${minutos} minutos`;
+    }
+
+    return "Hace un momento";
+}
+
+
 // ==========================================================================
 // CONFIGURACIÓN INICIAL Y VARIABLES GLOBALES
 // ==========================================================================
@@ -120,10 +250,22 @@ enlacesCategorias.forEach(enlace => {
 // 1.6 LÓGICA DEL MENÚ DE PERFIL Y CERRAR SESIÓN
 // ==========================================================================
 document.addEventListener('DOMContentLoaded', () => {
+
+    // 🔥 1. VALIDACIÓN VISUAL INICIAL PARA VISITANTES 🔥
+    const usuarioActual = localStorage.getItem('nombreUsuario');
+    
+    if (!usuarioActual) {
+        console.log("Agora: Navegando en modo visitante.");
+    }
+
+    // ==========================================================
+    // 2. LÓGICA DEL MENÚ DE PERFIL (Tu código original intacto)
+    // ==========================================================
     const btnPerfil = document.getElementById('btn-menu-perfil');
     const menuPerfil = document.getElementById('dropdown-perfil');
 
     if (btnPerfil && menuPerfil) {
+        
         // 1. Abrir/Cerrar menú al dar clic en la foto
         btnPerfil.addEventListener('click', (e) => {
             e.stopPropagation(); // Evita que el clic se propague y cierre el menú
@@ -154,18 +296,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnVerPerfil = document.getElementById('ver-mi-perfil');
         if (btnVerPerfil) {
             btnVerPerfil.addEventListener('click', () => {
-                window.location.href = 'perfil.html'; // Cambia si tu archivo se llama diferente
+                window.location.href = 'perfil.html';
             });
         }
 
-        // 4. Acción del botón "Cerrar Sesión" (Usando tu alerta personalizada)
+        // 4. Acción del botón "Cerrar Sesión"
         const btnCerrarSesion = document.getElementById('cerrar-sesion');
         if (btnCerrarSesion) {
             btnCerrarSesion.addEventListener('click', () => {
                 // Escondemos el menú primero para que no estorbe
                 menuPerfil.style.display = 'none';
 
-                // Llamamos a la función que creaste con el emoji de la puerta 🚪
+                // Llamamos a la función con el emoji de la puerta 🚪
                 mostrarAlertaCerrarSesion();
             });
         }
@@ -380,7 +522,7 @@ function renderizarPostsEnMuro() {
     
     postsDiv.innerHTML = ""; 
     
-    let postsAVisualizar = [...postsCargados].reverse();
+    let postsAVisualizar = [...postsCargados];
 
     if (typeof categoriaActual !== 'undefined' && categoriaActual !== "todas") {
         postsAVisualizar = postsAVisualizar.filter(post => post.categoria === categoriaActual);
@@ -468,7 +610,7 @@ function renderizarPostsEnMuro() {
         }
         htmlComentarios += '</div>';
 
-        const tiempoPost = post.fecha || "";
+        const tiempoPost = obtenerTiempoTranscurrido(post.fecha_publicacion);
         const etiquetaCategoria = post.categoria ? `<span style="background: #f1f5f9; color: #475569; padding: 4px 12px; border-radius: 16px; font-size: 0.8rem; font-weight: 600; border: 1px solid #e2e8f0;">🏷️ ${post.categoria}</span>` : '';
 
         let iconoCondicion = '';
@@ -542,6 +684,10 @@ window.toggleMenu = (event, postId) => {
 
 document.addEventListener('click', () => document.querySelectorAll('.menu-dropdown').forEach(m => m.classList.remove('show')));
 window.verPerfil = (nombreUsuario) => {
+    if (esVisitante()) {
+        mostrarModalVisitante();
+        return; // Cortamos la ejecución para que no redireccione
+    }
     window.location.href = `/perfil.html?usuario=${encodeURIComponent(nombreUsuario)}`;
 };
 
@@ -566,45 +712,112 @@ window.abrirVisor = (postId, indexClick) => {
     if(fbModal) fbModal.classList.add('show');
 };
 
+// ==========================================================================
+// RENDERIZADO DE LA MODAL (VISOR DE IMÁGENES + COMENTARIOS)
+// ==========================================================================
+
 function actualizarVistaModal(post) {
     if (post.imagenes && post.imagenes.length > 0) {
         fbModalImg.src = post.imagenes[currentIndexVisor];
     }
     
-    const commentsDiv = document.getElementById('fb-sidebar-comments');
-    if (!commentsDiv) return;
+    const sidebarDiv = document.getElementById('fb-sidebar-comments');
+    if (!sidebarDiv) return;
     
-    commentsDiv.innerHTML = '';
+    // Limpiamos el panel
+    sidebarDiv.innerHTML = '';
+    sidebarDiv.style.padding = '0';
+    sidebarDiv.style.margin = '0';
+
+    // --- 2. INFO PUBLICACIÓN ---
+    const tiempoPost = obtenerTiempoTranscurrido(post.fecha_publicacion);
+    let htmlInfoPost = `
+        <div style="background-color: #e6f7ff; border: 1px solid #b3e0ff; padding: 16px; width: 100%; box-sizing: border-box; border-top: none; margin-bottom: 0;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <div style="width: 36px; height: 36px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; border: 1px solid #e2e8f0;">👤</div>
+                <div style="display: flex; flex-direction: column; line-height: 1.3;">
+                    <span style="font-weight: 700; color: #0f172a; font-size: 0.95rem; font-family: sans-serif;">${post.autor}</span>
+                    <span style="color: #64748b; font-size: 0.8rem;">· ${tiempoPost}</span>
+                </div>
+            </div>
+            <div style="color: #334155; font-family: sans-serif; text-align: left;">
+                ${post.precio ? `<div style="font-size: 1.25rem; color: #10b981; font-weight: 900; margin-bottom: 4px;">$${post.precio}</div>` : ''}
+                ${post.titulo ? `<div style="margin: 0 0 6px 0; color: #0f172a; font-size: 1.05rem; font-weight: 700;">${post.titulo}</div>` : ''}
+                <div style="margin: 0; color: #475569; line-height: 1.5; font-size: 0.95rem; white-space: pre-wrap;">${post.texto}</div>
+            </div>
+        </div>
+    `;
+    sidebarDiv.innerHTML += htmlInfoPost;
+
+    // --- 3. COMENTARIOS (Diseño corregido) ---
+    const contenedorInternoComentarios = document.createElement('div');
+    // Usamos display: block en lugar de flex para evitar choques con tu CSS
+    contenedorInternoComentarios.style.cssText = "width: 100%; box-sizing: border-box; padding: 16px; display: block;";
+    sidebarDiv.appendChild(contenedorInternoComentarios);
+
     const comentarios = post.comentarios || [];
     
     if (comentarios.length === 0) {
-        commentsDiv.innerHTML = '<p style="color: #64748b; font-size: 0.9rem; text-align: center; margin-top: 20px;">Sin comentarios aún. ¡Sé el primero!</p>';
+        contenedorInternoComentarios.innerHTML = '<p style="color: #94a3b8; font-size: 0.9rem; margin: 0; font-family: sans-serif;">Sin comentarios aún. ¡Sé el primero!</p>';
     } else {
         comentarios.forEach((c, index) => {
             const esMio = c.autor === obtenerNombreUsuario();
-            const tiempoComentario = c.fecha || "";
+            const tiempoComentario = obtenerTiempoTranscurrido(c.fecha); 
             
             let htmlAcciones = '';
             if (esMio) {
+                // Menú de 3 puntos flotando a la derecha con float: right
                 htmlAcciones = `
-                    <div style="font-size: 0.75rem; margin-top: 3px; display:flex; gap: 8px;">
-                        <button onclick="editarComentario(${post.id}, ${index}, '${c.texto.replace(/'/g, "\\'")}')" style="background:none; border:none; color:#3b82f6; cursor:pointer; padding:0;">Editar</button>
-                        <button onclick="borrarComentario(${post.id}, ${index})" style="background:none; border:none; color:#ef4444; cursor:pointer; padding:0;">Borrar</button>
+                    <div style="position: relative; float: right;">
+                        <button onclick="toggleMenuComentario(${index})" style="background: transparent; border: none; cursor: pointer; color: #64748b; font-size: 1.3rem; padding: 0 4px; font-weight: bold; outline: none;">⋮</button>
+                        
+                        <div id="menu-comentario-${index}" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 10; width: 110px; margin-top: 2px;">
+    <button onclick="editarComentario(${post.id}, ${c.id}, '${c.texto.replace(/'/g, "\\'")}')" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; cursor: pointer; color: #334155; font-size: 0.85rem; border-bottom: 1px solid #f1f5f9;">✏️ Editar</button>
+    
+    <button onclick="borrarComentario(${post.id}, ${c.id})" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; cursor: pointer; color: #ef4444; font-size: 0.85rem;">🗑️ Borrar</button>
+</div>
                     </div>
                 `;
             }
 
-            commentsDiv.innerHTML += `
-                <div style="margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
-                    <strong style="color: #0f172a; font-size: 0.9rem;">${c.autor}</strong> 
-                    <span style="color: #94a3b8; font-size: 0.75rem; margin-left: 5px;">${tiempoComentario}</span>
-                    <p style="margin: 3px 0; font-size: 0.9rem; color: #334155;">${c.texto}</p>
-                    ${htmlAcciones}
+            // Burbuja del comentario
+            contenedorInternoComentarios.innerHTML += `
+                <div style="margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; font-family: sans-serif; clear: both;">
+                    
+                    <div style="margin-bottom: 4px;">
+                        ${htmlAcciones}
+                        <span style="font-weight: 700; color: #0f172a; font-size: 0.9rem; margin-right: 6px;">${c.autor}</span> 
+                        <span style="color: #94a3b8; font-size: 0.75rem;">· ${tiempoComentario}</span>
+                    </div>
+
+                    <p style="margin: 0; font-size: 0.9rem; color: #334155; line-height: 1.4; word-break: break-word;">${c.texto}</p>
                 </div>
             `;
         });
     }
 }
+
+// --- FUNCIONES EXTRA PARA CONTROLAR EL MENÚ ---
+
+function toggleMenuComentario(index) {
+    const menu = document.getElementById('menu-comentario-' + index);
+    const estaOculto = menu.style.display === 'none' || menu.style.display === '';
+    
+    // Ocultar cualquier otro menú que esté abierto
+    document.querySelectorAll('[id^="menu-comentario-"]').forEach(el => el.style.display = 'none');
+    
+    // Si estaba oculto, lo mostramos
+    if (estaOculto) {
+        menu.style.display = 'block';
+    }
+}
+
+// Cerrar el menú si el usuario hace clic en cualquier otra parte de la pantalla
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('[id^="menu-comentario-"]') && !event.target.textContent.includes('⋮')) {
+        document.querySelectorAll('[id^="menu-comentario-"]').forEach(el => el.style.display = 'none');
+    }
+});
 
 function navegarVisor(direccion) {
     const post = postsCargados.find(p => p.id === currentPostIdVisor);
@@ -673,9 +886,9 @@ document.getElementById('fb-comment-btn')?.addEventListener('click', async () =>
     } catch(e) { console.error("Error al comentar", e); }
 });
 
-window.borrarComentario = (postId, indexComentario) => {
-    // 🔥 Recuperamos el ID
+window.borrarComentario = (postId, idComentario) => { // ⬅️ CAMBIO: Ahora pedimos idComentario
     const idUsuario = localStorage.getItem('userId');
+    const idPostNumerico = parseInt(postId, 10);
 
     AgoraModals.confirm("Borrar comentario", "¿Seguro que deseas borrar este comentario? Esta acción no se puede deshacer.", "Borrar", async () => {
         try {
@@ -683,41 +896,71 @@ window.borrarComentario = (postId, indexComentario) => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    postId, 
-                    indexComentario,
-                    id_usuario: idUsuario // 🔥 Se lo pasamos al backend
+                    postId: idPostNumerico, 
+                    idComentario: idComentario, // ✅ CAMBIO: Ahora enviamos el ID real que el backend pide
+                    id_usuario: idUsuario 
                 })
             });
+            
             if(res.ok) {
-                await cargarPosts();
-                actualizarVistaModal(postsCargados.find(p => p.id === postId));
+                await cargarPosts(); // Trae el nuevo estado del servidor
+                
+                const postActualizado = postsCargados.find(p => p.id == idPostNumerico);
+                
+                if (postActualizado) {
+                    if (typeof actualizarVistaModal === 'function') actualizarVistaModal(postActualizado);
+                }
+                
+                // Forzar refresco del muro principal por si acaso
+                if (typeof renderizarPostsEnMuro === 'function') renderizarPostsEnMuro();
+                
+            } else {
+                mostrarAlertaAnimada("Error en el servidor al intentar borrar el comentario.");
             }
-        } catch(e) {}
+        } catch(e) { 
+            console.error("Error de conexión borrando:", e); 
+            mostrarAlertaAnimada("No se pudo conectar con el servidor.");
+        }
     });
 };
 
-window.editarComentario = (postId, indexComentario, textoViejo) => {
-    // 🔥 Recuperamos el ID
+window.editarComentario = (postId, idComentario, textoViejo) => { // ⬅️ CAMBIO: Recibe idComentario
     const idUsuario = localStorage.getItem('userId');
+    const idPostNumerico = parseInt(postId, 10);
 
     AgoraModals.prompt("Edita tu comentario:", textoViejo, async (nuevoTexto) => {
-        if(!nuevoTexto || nuevoTexto === textoViejo) return;
+        if(!nuevoTexto || nuevoTexto.trim() === "" || nuevoTexto === textoViejo) return;
+        
         try {
             const res = await fetch('/editar-comentario', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    postId, 
-                    indexComentario, 
-                    nuevoTexto,
-                    id_usuario: idUsuario // 🔥 Se lo pasamos al backend
+                    postId: idPostNumerico, 
+                    idComentario: idComentario, // ✅ CAMBIO: Enviamos la variable correcta
+                    nuevoTexto: nuevoTexto.trim(),
+                    id_usuario: idUsuario 
                 })
             });
+            
             if(res.ok) {
                 await cargarPosts();
-                actualizarVistaModal(postsCargados.find(p => p.id === postId));
+                
+                const postActualizado = postsCargados.find(p => p.id == idPostNumerico);
+                
+                if (postActualizado) {
+                    if (typeof actualizarVistaModal === 'function') actualizarVistaModal(postActualizado);
+                }
+                
+                if (typeof renderizarPostsEnMuro === 'function') renderizarPostsEnMuro();
+                
+            } else {
+                mostrarAlertaAnimada("Error en el servidor al intentar editar el comentario.");
             }
-        } catch(e) {}
+        } catch(e) { 
+            console.error("Error de conexión editando:", e);
+            mostrarAlertaAnimada("No se pudo conectar con el servidor.");
+        }
     });
 };
 
@@ -850,6 +1093,53 @@ if(editPostImagesInput) {
         editPostImagesInput.value = ""; 
     });
 }
+
+// ==========================================
+// 🛡️ GUARDIÁN DE VISITANTES (ACTUALIZADO)
+// ==========================================
+window.mostrarModalVisitante = () => {
+    // Usamos un ID único que no choque con tu CSS tradicional
+    let modal = document.getElementById('modal-visitante-blindado');
+    
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-visitante-blindado';
+        
+        // Aplicamos !important a absolutamente todo para evitar bloqueos del style.css
+        modal.style.cssText = 'position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background: rgba(0,0,0,0.7) !important; z-index: 999999 !important; display: flex !important; align-items: center !important; justify-content: center !important;';
+        
+        modal.innerHTML = `
+            <div style="background: white !important; text-align: center !important; padding: 35px !important; border-radius: 15px !important; box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important; max-width: 90% !important; width: 380px !important; display: block !important; visibility: visible !important; opacity: 1 !important;">
+                <div style="font-size: 3.5rem !important; margin-bottom: 15px !important; display: block !important;">🔒</div>
+                <p style="margin-bottom: 25px !important; font-size: 1.15rem !important; color: #1e293b !important; font-weight: bold !important; line-height: 1.5 !important; display: block !important;">
+                    Para hacer esto primero debes iniciar sesión.
+                </p>
+                <div style="display: flex !important; flex-direction: column !important; gap: 10px !important; width: 100% !important;">
+                    <button id="btn-login-visitante" style="background: #3b82f6 !important; color: white !important; border: none !important; padding: 12px !important; border-radius: 8px !important; cursor: pointer !important; font-weight: bold !important; font-size: 1rem !important; display: block !important; width: 100% !important;">
+                        Iniciar Sesión
+                    </button>
+                    <button id="btn-cerrar-visitante" style="background: #cbd5e1 !important; color: #334155 !important; border: none !important; padding: 12px !important; border-radius: 8px !important; cursor: pointer !important; font-weight: bold !important; font-size: 1rem !important; display: block !important; width: 100% !important;">
+                        Continuar como visitante
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        // Evento para el botón Continuar como visitante
+        document.getElementById('btn-cerrar-visitante').addEventListener('click', () => {
+            modal.style.setProperty('display', 'none', 'important');
+        });
+
+        // Evento para ir al Login
+        document.getElementById('btn-login-visitante').addEventListener('click', () => {
+            window.location.href = '/index.html'; 
+        });
+    }
+    
+    // Mostramos el modal asegurando el display flex supremo
+    modal.style.setProperty('display', 'flex', 'important');
+};
 
 function renderizarImagenesNuevas() {
     if(!previewNuevas) return;
@@ -1080,15 +1370,20 @@ function mostrarAlertaCerrarSesion() {
         `;
         document.body.appendChild(modalLogout);
 
+        // Evento Cancelar
         document.getElementById('btn-cancelar-logout').addEventListener('click', () => {
             modalLogout.classList.remove('activo');
             setTimeout(() => modalLogout.remove(), 300);
         });
 
+        // Evento Confirmar (¡AQUÍ ESTÁ EL CAMBIO! 🚀)
         document.getElementById('btn-confirmar-logout').addEventListener('click', () => {
+            // Limpiamos datos
             localStorage.removeItem('nombreUsuario');
             localStorage.removeItem('userRole');
-            window.location.href = '/index.html';
+            
+            // Redirección limpia reemplazando el historial del navegador
+            window.location.replace('/index.html');
         });
     }
 }
@@ -1196,79 +1491,293 @@ buscador.addEventListener('keydown', (e) => {
         confirmarBusqueda();
     }
 });
-// =========================================
-//   MODAL DE CREAR PUBLICACIÓN
-// =========================================
+
+// ==========================================
+//  MODAL DE CREAR PUBLICACIÓN (OPTIMIZADO)
+// ==========================================
 
 const btnAbrirModalPub = document.getElementById('btnAbrirModalPublicar');
 const modalPublicacion = document.getElementById('modalPublicacion');
 const btnCerrarModalPub = document.getElementById('btnCerrarModalPublicar');
+const btnPublicarFinal = document.getElementById('btn-publish'); 
+const inputsFormulario = document.querySelectorAll('#modalPublicacion input, #modalPublicacion textarea, #modalPublicacion select');
+
+// FUNCIÓN PARA LIMPIAR EL FORMULARIO (Evita fugas de datos viejos)
+function limpiarFormularioPublicacion() {
+    inputsFormulario.forEach(input => {
+        input.value = '';
+        input.classList.remove('input-error'); 
+    });
+    
+    // Limpieza de contenedores de imágenes
+    const previewNuevas = document.getElementById('preview-container');
+    if (previewNuevas) previewNuevas.innerHTML = '';
+    
+    // 🔥 CORRECCIÓN: Resetea la variable global de imágenes para que no se arrastren al nuevo post
+    if (window.nuevasImagenesSubir) {
+        window.nuevasImagenesSubir = [];
+    }
+    
+    verificarCamposLlenos(); 
+}
+
+// FUNCIÓN PARA MOSTRAR/OCULTAR BOTONES DINÁMICAMENTE
+function verificarCamposLlenos() {
+    let hayTexto = false;
+    inputsFormulario.forEach(input => {
+        if (input.type !== 'file' && input.value && input.value.trim() !== "") {
+            hayTexto = true;
+        }
+    });
+
+    const btnGuardarBorrador = document.getElementById('btn-guardar-borrador');
+    
+    if (hayTexto) {
+        if(btnGuardarBorrador) btnGuardarBorrador.style.display = 'inline-block';
+        if(btnPublicarFinal) btnPublicarFinal.style.display = 'inline-block';
+    } else {
+        if(btnGuardarBorrador) btnGuardarBorrador.style.display = 'none';
+        if(btnPublicarFinal) btnPublicarFinal.style.display = 'none';
+    }
+}
+
+// Escuchar cambios en tiempo real
+inputsFormulario.forEach(input => {
+    input.addEventListener('input', verificarCamposLlenos);
+    input.addEventListener('change', verificarCamposLlenos);
+});
 
 if (btnAbrirModalPub) {
     btnAbrirModalPub.addEventListener('click', () => {
-        // 🔥 RESTRICCIÓN PARA VISITANTES 🔥
+        // Interceptores del Guardián de Visitantes
         if (typeof esVisitante === 'function' && esVisitante()) {
             mostrarModalVisitante();
-            return; // Corta la ejecución para que no se abra el modal de publicar
+            return;
         }
-        
+        verificarCamposLlenos(); 
         modalPublicacion.style.display = 'flex'; 
     });
 }
+
 if (btnCerrarModalPub) {
     btnCerrarModalPub.addEventListener('click', () => {
         modalPublicacion.style.display = 'none';
+        limpiarFormularioPublicacion(); 
     });
 }
+
 window.addEventListener('click', (e) => {
     if (e.target === modalPublicacion) {
         modalPublicacion.style.display = 'none';
+        limpiarFormularioPublicacion(); 
     }
 });
+
 // ==========================================
-// CONTROL DE VISITANTES (MODAL RESTRICCIÓN)
+// 8. LÓGICA DE BORRADORES (NODE.JS / MYSQL)
 // ==========================================
 
-function esVisitante() {
-    // Si no hay userId en localStorage, asumimos que es visitante
-    const userId = localStorage.getItem('userId');
-    return !userId || userId === 'null' || userId === 'undefined';
-}
+const btnVerBorradores = document.getElementById('btn-ver-borradores');
+const btnGuardarBorrador = document.getElementById('btn-guardar-borrador');
+const contenedorBorradores = document.getElementById('contenedor-lista-borradores');
+const listaBorradoresUl = document.getElementById('lista-borradores-ul');
+const btnVolverEdicion = document.getElementById('btn-volver-edicion');
+const formPublicacionBody = document.getElementById('cuerpo-formulario-publicacion');
 
-function mostrarModalVisitante() {
-    let modalVisitante = document.getElementById('modal-visitante-restringido');
+let borradoresActuales = [];
 
-    if (!modalVisitante) {
-        modalVisitante = document.createElement('div');
-        modalVisitante.id = 'modal-visitante-restringido';
-        modalVisitante.className = 'alerta-overlay activo'; 
-        modalVisitante.style.display = 'flex'; 
+// 1. GUARDAR BORRADOR
+document.addEventListener('click', async (e) => {
+    const btnGuardar = e.target.closest('#btn-guardar-borrador');
+    if (!btnGuardar) return;
 
-        modalVisitante.innerHTML = `
-            <div class="alerta-box" style="text-align: center; padding: 25px; border-radius: 15px;">
-                <div class="alerta-icono" style="font-size: 3rem; margin-bottom: 15px;">🔒</div>
-                <h3 style="margin: 0; color: #613DB7; margin-bottom: 10px;">¡Oops! Acción restringida</h3>
-                <p style="margin-bottom: 25px; font-size: 1.1rem; color: #334155;">Necesitas iniciar sesión o crear una cuenta para interactuar, comentar o publicar.</p>
-                <div style="display: flex; gap: 15px; justify-content: center;">
-                    <button id="btn-cerrar-visitante" style="background: #cbd5e1; color: #334155; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s;">Seguir viendo</button>
-                    <button id="btn-ir-login" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s;">Iniciar Sesión</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modalVisitante);
-
-        // Eventos de los botones del modal
-        document.getElementById('btn-cerrar-visitante').addEventListener('click', () => {
-            modalVisitante.classList.remove('activo');
-            setTimeout(() => modalVisitante.style.display = 'none', 300);
-        });
-
-        document.getElementById('btn-ir-login').addEventListener('click', () => {
-            window.location.href = '/index.html'; // Ajusta esto si tu login está en otra ruta
-        });
-    } else {
-        modalVisitante.style.display = 'flex';
-        // Pequeño timeout para la animación si usas opacidad en CSS
-        setTimeout(() => modalVisitante.classList.add('activo'), 10);
+    // Redirección elegante si es un visitante intruso
+    if (typeof esVisitante === 'function' && esVisitante()) {
+        mostrarModalVisitante();
+        return;
     }
+
+    const nombreUsuario = localStorage.getItem('nombreUsuario') || localStorage.getItem('usuario'); 
+    if (!nombreUsuario) {
+        mostrarAlertaAnimada("⚠️ Debes iniciar sesión para guardar borradores.");
+        return;
+    }
+
+    const titulo = document.getElementById('postTitle')?.value.trim() || "";
+    const contenido = document.getElementById('postContent')?.value.trim() || "";
+
+    if (!titulo && !contenido) {
+        mostrarAlertaAnimada("⚠️ Escribe al menos un título o descripción para guardar.");
+        return;
+    }
+
+    const datosBorrador = {
+        autor: nombreUsuario,
+        titulo: titulo,
+        descripcion: contenido,
+        precio: document.getElementById('postPrice')?.value || "0",
+        estado: document.getElementById('postEstado')?.value || "", 
+        municipio: document.getElementById('postMunicipio')?.value || "",
+        categoria: document.getElementById('postCategoria')?.value || "",
+        condicion: document.getElementById('postCondicion')?.value || ""
+    };
+
+    const textoOriginal = btnGuardar.innerHTML;
+    btnGuardar.innerHTML = "Guardando...";
+    btnGuardar.disabled = true;
+
+    try {
+        const response = await fetch('/api/borradores', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(datosBorrador)
+        });
+        
+        const result = await response.json();
+
+        if (response.ok && result.id) {
+            mostrarAlertaAnimada("💾 ¡Borrador guardado con éxito!");
+            limpiarFormularioPublicacion();
+            if (modalPublicacion) modalPublicacion.style.display = 'none';
+        } else {
+            mostrarAlertaAnimada("❌ Error al guardar: " + (result.message || "Error desconocido"));
+        }
+    } catch (error) {
+        console.error("Error en la petición de borrador:", error);
+        mostrarAlertaAnimada("❌ No se pudo conectar con el servidor.");
+    } finally {
+        btnGuardar.innerHTML = textoOriginal;
+        btnGuardar.disabled = false;
+    }
+});
+
+// 2. VER LISTA DE BORRADORES
+if (btnVerBorradores) {
+    btnVerBorradores.addEventListener('click', async () => {
+        if (typeof esVisitante === 'function' && esVisitante()) {
+            mostrarModalVisitante();
+            return;
+        }
+
+        const nombreUsuario = localStorage.getItem('nombreUsuario') || localStorage.getItem('usuario'); 
+        if (!nombreUsuario) {
+            mostrarAlertaAnimada("⚠️ Inicia sesión para ver tus borradores.");
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/borradores/usuario/${nombreUsuario}`);
+            if (!response.ok) throw new Error("Error en servidor");
+
+            borradoresActuales = await response.json();
+            if (listaBorradoresUl) listaBorradoresUl.innerHTML = "";
+
+            if (borradoresActuales.length === 0) {
+                if (listaBorradoresUl) {
+                    listaBorradoresUl.innerHTML = "<li class='borrador-vacio' style='padding:15px; color:#666;'>No tienes borradores guardados.</li>";
+                }
+            } else {
+                borradoresActuales.forEach(borrador => {
+                    const li = document.createElement('li');
+                    li.className = "borrador-card"; 
+                    li.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee;";
+                    
+                    const descripcionMuestra = borrador.descripcion || borrador.texto || 'Sin descripción disponible';
+                    
+                    li.innerHTML = `
+                        <div class="borrador-info" style="flex: 1; text-align: left;">
+                            <span class="borrador-icon">✏️</span>
+                            <div class="borrador-textos" style="display:inline-block; margin-left:10px;">
+                                <strong class="borrador-title">${borrador.titulo || 'Sin título'}</strong>
+                                <p class="borrador-desc" style="margin: 5px 0 0 0; color: #666; font-size: 0.9em;">${descripcionMuestra}</p>
+                            </div>
+                        </div>
+                        <div class="borrador-acciones" style="display: flex; gap: 10px;">
+                            <button class="btn-editar-borrador btn-cargar-borrador" data-id="${borrador.id}" style="padding: 6px 12px; cursor: pointer; background: #3b82f6; color: white; border: none; border-radius: 6px; font-weight:500;">Editar</button>
+                            <button class="btn-eliminar-borrador" data-id="${borrador.id}" style="padding: 6px 12px; cursor: pointer; background: #ef4444; color: white; border: none; border-radius: 6px; font-weight:500;">Borrar</button>
+                        </div>
+                    `;
+                    if (listaBorradoresUl) listaBorradoresUl.appendChild(li);
+                });
+            }
+
+            if (formPublicacionBody) formPublicacionBody.style.display = 'none';
+            if (contenedorBorradores) contenedorBorradores.style.display = 'block';
+
+        } catch (error) {
+            console.error("Error al obtener los borradores:", error);
+            mostrarAlertaAnimada("❌ No se pudieron cargar los borradores.");
+        }
+    });
 }
+
+// 3. BOTÓN VOLVER DESDE LA LISTA
+if (btnVolverEdicion) {
+    btnVolverEdicion.addEventListener('click', () => {
+        if (contenedorBorradores) contenedorBorradores.style.display = 'none';
+        if (formPublicacionBody) formPublicacionBody.style.display = 'block';
+    });
+}
+
+// 4. DELEGACIÓN DE EVENTOS: CARGAR O BORRAR BORRADOR
+document.addEventListener('click', (e) => {
+    // A. Lógica para CARGAR un borrador
+    if (e.target && e.target.classList.contains('btn-cargar-borrador')) {
+        const borradorId = parseInt(e.target.getAttribute('data-id'));
+        const borradorSeleccionado = borradoresActuales.find(b => b.id === borradorId);
+
+        if (borradorSeleccionado) {
+            if (document.getElementById('postTitle')) document.getElementById('postTitle').value = borradorSeleccionado.titulo || "";
+            if (document.getElementById('postContent')) document.getElementById('postContent').value = borradorSeleccionado.descripcion || borradorSeleccionado.texto || "";
+            if (document.getElementById('postPrice')) document.getElementById('postPrice').value = borradorSeleccionado.precio || "";
+            if (document.getElementById('postCategoria')) document.getElementById('postCategoria').value = borradorSeleccionado.categoria || "";
+            if (document.getElementById('postCondicion')) document.getElementById('postCondicion').value = borradorSeleccionado.condicion || "";
+
+            // ⚡ CORRECCIÓN MAESTRA: Sincronizar selectores dinámicos de Ubicación
+            const inputEstado = document.getElementById('postEstado');
+            if (inputEstado) {
+                inputEstado.value = borradorSeleccionado.estado_republica || borradorSeleccionado.estado || "";
+                // Forzamos el evento 'change' para que se renderice el sub-combo de municipios
+                inputEstado.dispatchEvent(new Event('change'));
+            }
+            
+            // Ahora que los municipios existen en el DOM, asignamos el valor correspondiente
+            if (document.getElementById('postMunicipio')) {
+                document.getElementById('postMunicipio').value = borradorSeleccionado.municipio || "";
+            }
+
+            if (contenedorBorradores) contenedorBorradores.style.display = 'none';
+            if (formPublicacionBody) formPublicacionBody.style.display = 'block';
+            
+            verificarCamposLlenos();
+        }
+    }
+
+    // B. Lógica para BORRAR un borrador
+    if (e.target && e.target.classList.contains('btn-eliminar-borrador')) {
+        const borradorId = e.target.getAttribute('data-id');
+
+        AgoraModals.confirm(
+            "Borrar borrador", 
+            "¿Seguro que deseas borrar este borrador? Esta acción no se puede deshacer.", 
+            "Borrar", 
+            async () => {
+                try {
+                    const res = await fetch(`/api/borradores/${borradorId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if(res.ok) {
+                        mostrarAlertaAnimada("🗑️ Borrador eliminado.");
+                        if (btnVerBorradores) btnVerBorradores.click();
+                    } else {
+                        mostrarAlertaAnimada("❌ Error al eliminar el borrador.");
+                    }
+                } catch(err) {
+                    console.error(err);
+                    mostrarAlertaAnimada("❌ Error de conexión al eliminar.");
+                }
+            }
+        );
+    }
+});

@@ -55,7 +55,12 @@
                     
                     <div class="input">
                         <label for="password-reg">Contraseña</label>
-                        <input type="password" name="password_reg" id="password-reg" placeholder="Ingresa tu contraseña" required>
+                        <input 
+                        type="password" name="password_reg" 
+                        id="password-reg" placeholder="Máx 8 caracteres, letras, números y símbolos"
+                         maxlength="8" pattern="^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&._-]).{1,8}$" 
+                         title="La contraseña debe tener máximo 8 caracteres e incluir letras, números y símbolos."
+                         required>
                     </div>
                     
                     <div class="buttons">

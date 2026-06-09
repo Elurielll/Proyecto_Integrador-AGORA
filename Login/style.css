@@ -414,7 +414,7 @@ body.perfil-body-moderno { margin: 0; padding: 0; background: #f0f4f8; display: 
 .fb-close-btn:hover { background: rgba(255,255,255,0.4); transform: scale(1.05); }
 .fb-modal-sidebar { flex: 1; min-width: 320px; max-width: 400px; background: white; display: flex; flex-direction: column; border-left: 1px solid #e2e8f0; }
 .fb-sidebar-header { padding: 15px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
-.fb-sidebar-header h3 { font-size: 1.2rem; color: #1e3a8a; margin-bottom: 5px; }
+.fb-sidebar-header h3 { font-size: 1.2rem; color: #ffffff; margin-bottom: 5px; background-color:#152857 ; display: inline-block; padding: 6px 8px; border-radius: 5px; }
 .fb-sidebar-comments { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: #f0f4f8; }
 .fb-sidebar-input { padding: 15px; border-top: 1px solid #e2e8f0; display: flex; gap: 10px; background: white; }
 .fb-sidebar-input input { flex: 1; padding: 10px 15px; border: 1px solid #cbd5e1; border-radius: 20px; outline: none; font-size: 0.9rem; }
@@ -804,137 +804,110 @@ body.perfil-body-moderno { margin: 0; padding: 0; background: #f0f4f8; display: 
     display: flex;
 }
 
-/* Este es el contenedor que envuelve los dos botones */
-.contenedor-perfil-top {
-    display: flex !important;
-    flex-direction: row !important; /* Los pone uno al lado del otro */
-    align-items: center !important;
-    gap: 10px; /* Espacio entre los dos círculos */
+/* ==========================================
+   ESTILOS EXCLUSIVOS PARA LISTA DE BORRADORES
+   ========================================== */
+#lista-borradores-ul {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+    max-height: 350px;
+    overflow-y: auto;
 }
 
-/* Aseguramos que ambos botones sean círculos perfectos */
-.btn-perfil-top {
-    width: 45px !important;
-    height: 45px !important;
-    border-radius: 50% !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 0 !important;
-    border: 1px solid #ddd !important;
-    background-color: white !important;
-    cursor: pointer;
+.borrador-vacio {
+    text-align: center;
+    color: #64748b;
+    padding: 20px;
+    font-style: italic;
 }
 
-.btn-perfil-top img {
-    width: 24px !important;
-    height: 24px !important;
-    object-fit: contain;
-}
-
-/* LA BANDEJA: Esto es lo que evita que se arruine el diseño */
-#bandeja-entrada {
-    position: fixed !important; /* IMPORTANTE: Para que flote sobre el muro */
-    top: 80px !important;      /* Distancia desde arriba */
-    right: 20px !important;     /* Pegada a la derecha */
-    width: 320px !important;    /* Ancho fijo */
-    height: 450px !important;   /* Alto fijo */
-    z-index: 9999 !important;   /* Por encima de todo */
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    display: none;              /* El JS la muestra/oculta */
-    flex-direction: column;
-    border: 1px solid #ddd;
-    overflow: hidden;
-}
-
-/* Contenedor de cada chat (el "globo" o bloque) */
-.chat-item {
-    display: flex;
-    align-items: center; /* Alinea verticalmente foto y texto */
-    padding: 12px;
-    margin: 8px; /* Espacio entre cada chat */
-    border-radius: 12px; /* Bordes redondeados para el contenedor */
-    background-color: #1e1e1e; /* Color de fondo del bloque */
-    cursor: pointer;
-    transition: background 0.3s;
-    border: 1px solid #333;
-    gap: 12px; /* Espacio entre la foto y el contenido */
-}
-
-.chat-item:hover {
-    background-color: #2d2d2d;
-}
-
-/* La imagen de perfil circular */
-.chat-item img, .chat-item-avatar {
-    width: 45px;
-    height: 45px;
-    border-radius: 50%;
-    object-fit: cover;
-    flex-shrink: 0; /* Evita que la foto se aplaste */
-}
-
-/* Contenedor de la información al lado de la foto */
-.chat-info {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden; /* Necesario para los tres puntos */
-    width: 100%;
-}
-
-/* Línea superior: Nombre y Hora */
-.chat-header {
+/* Tarjeta contenedora de cada borrador */
+.borrador-card {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 2px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    transition: all 0.25s ease;
 }
 
-.chat-name {
-    font-weight: bold;
-    color: white;
+/* Efecto al pasar el cursor sobre la tarjeta */
+.borrador-card:hover {
+    background: #ffffff;
+    border-color: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(37, 99, 235, 0.08);
+}
+
+.borrador-info {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    max-width: 75%;
+}
+
+/* Icono redondo decorativo */
+.borrador-icon {
+    font-size: 1.2rem;
+    background: #eff6ff;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    min-height: 38px;
+}
+
+.borrador-textos {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.borrador-title {
+    color: #1e293b;
     font-size: 0.95rem;
-}
-
-.chat-time {
-    font-size: 0.7rem;
-    color: #888;
-}
-
-/* El mensaje con límite y tres puntos (...) */
-.chat-last-message {
-    font-size: 0.85rem;
-    color: #bbb;
-    white-space: nowrap; /* Evita que el texto salte de línea */
-    overflow: hidden; /* Esconde lo que sobra */
-    text-overflow: ellipsis; /* Agrega los "..." automáticamente */
-    max-width: 180px; /* Ajusta este ancho según el tamaño de tu modal */
-}
-
-/* 1. Ajustamos el contenedor de la info para que no deje crecer al texto infinito */
-.chat-item-info {
-    flex: 1; /* Para que ocupe el espacio disponible entre la foto y la hora */
-    min-width: 0; /* TRUCO VITAL: Evita que flexbox se estire con textos largos */
-    padding: 0 10px; /* Un poquito de espacio a los lados */
-}
-
-/* 2. Le ponemos el límite y los tres puntitos al párrafo del mensaje */
-.chat-item-info p {
-    white-space: nowrap;       /* Evita que salte a la siguiente línea */
-    overflow: hidden;          /* Esconde todo lo que no cabe */
-    text-overflow: ellipsis;   /* Agrega los "..." */
-    margin: 0;                 /* Quitamos el margen por defecto del párrafo */
-    font-size: 0.85rem;
-    color: #94a3b8;            /* Un color grisáceo sutil para el mensaje */
-}
-
-/* 3. De paso, le quitamos el margen al h4 para que se vea más juntito y limpio */
-.chat-item-info h4 {
-    margin: 0 0 3px 0;
-    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 3px;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis; /* Por si alguien tiene un nombre súper largo */
+    text-overflow: ellipsis;
+}
+
+.borrador-desc {
+    color: #64748b;
+    font-size: 0.85rem;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Botón moderno de Editar */
+.btn-editar-borrador {
+    background: #2563eb;
+    color: #ffffff;
+    border: none;
+    padding: 7px 18px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border-radius: 20px;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.15);
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.btn-editar-borrador:hover {
+    background: #1d4ed8;
+    transform: scale(1.03);
+}
+
+.btn-editar-borrador:active {
+    transform: scale(0.97);
 }

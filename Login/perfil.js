@@ -244,7 +244,11 @@ async function guardarCambiosPerfil() {
     }
 }
 
-// --- 4. CARGAR LAS PUBLICACIONES DEL USUARIO ---
+// Variable global para controlar qué imagen se está viendo en el perfil
+let indexVisorPerfil = 0;
+let imagenesActualesPerfil = [];
+
+// --- 4. CARGAR LAS PUBLICACIONES DEL USUARIO Y MANEJO DE MODAL ---
 async function cargarPublicacionesUsuario() {
     try {
         const response = await fetch(`/api/publicaciones/usuario/${nombrePerfil}`);
@@ -263,20 +267,190 @@ async function cargarPublicacionesUsuario() {
                 ? post.imagenes[0] 
                 : 'https://via.placeholder.com/400x300/e2e8f0/64748b?text=Sin+Imagen';
 
-            const tituloCorto = post.texto.substring(0, 30) + (post.texto.length > 30 ? '...' : '');
+            // --- CORRECCIÓN DE TARJETAS (TITULO, PRECIO, DESCRIPCIÓN) ---
+            const titulo = post.titulo || 'Sin título';
+            const precio = post.precio ? `$${post.precio}` : '';
+            // Cortamos la descripción a 40 caracteres
+            const descCorta = post.texto ? (post.texto.substring(0, 40) + (post.texto.length > 40 ? '...' : '')) : 'Sin descripción';
 
             const card = document.createElement('div');
+            // Estructura de la tarjeta ajustada a lo que pediste
             card.innerHTML = `
-                <img src="${imagenPrincipal}" alt="Publicación">
-                <span style="display:block; font-weight:bold; margin-top:5px;">${post.estado || 'Disponible'}</span>
-                <p style="margin: 5px 0;">${tituloCorto || 'Publicación'}</p>
-                <button class="btn-detalles" onclick="alert('Aquí podrías abrir el post completo')">Ver publicación</button>
+                <img src="${imagenPrincipal}" alt="Publicación" style="width: 100%; object-fit: cover; border-radius: 8px 8px 0 0;">
+                <div style="padding: 10px; text-align: center;">
+                    <h3 style="font-size: 1.1rem; font-weight: bold; margin: 5px 0; color: #1e293b;">${titulo}</h3>
+                    <p style="font-size: 1.2rem; font-weight: bold; color: #10b981; margin: 0 0 10px 0;">${precio}</p>
+                    <p style="font-size: 0.9rem; color: #64748b; margin: 0 0 15px 0;">${descCorta}</p>
+                </div>
+                <button class="btn-detalles" style="width: 90%; margin: 0 auto 10px auto; display: block;">Ver publicación</button>
             `;
+
+            // EVENTO CLICK DEL BOTÓN
+            const btnVerPublicacion = card.querySelector('.btn-detalles');
+            btnVerPublicacion.onclick = () => {
+                abrirModalPublicacionPerfil(post);
+            };
+
             contenedor.appendChild(card);
         });
     } catch (error) {
         console.error("Error al cargar posts:", error);
     }
+}
+
+// FUNCIÓN PARA ABRIR LA MODAL EN EL PERFIL
+function abrirModalPublicacionPerfil(post) {
+    const modal = document.getElementById('modal-publicacion-perfil');
+    const imgModal = document.getElementById('perfil-modal-img');
+    
+    if (!modal) return;
+
+    // Configurar imágenes del visor
+    imagenesActualesPerfil = post.imagenes || [];
+    indexVisorPerfil = 0;
+
+    if (imagenesActualesPerfil.length > 0) {
+        imgModal.src = imagenesActualesPerfil[indexVisorPerfil];
+    } else {
+        imgModal.src = 'https://via.placeholder.com/400x300/e2e8f0/64748b?text=Sin+Imagen';
+    }
+
+    // Configurar flechas si hay más de una imagen
+    const btnPrev = document.getElementById('btn-prev-perfil');
+    const btnNext = document.getElementById('btn-next-perfil');
+    if (imagenesActualesPerfil.length > 1) {
+        btnPrev.style.display = 'block';
+        btnNext.style.display = 'block';
+        
+        btnPrev.onclick = () => cambarImagenPerfil(-1);
+        btnNext.onclick = () => cambarImagenPerfil(1);
+    } else {
+        btnPrev.style.display = 'none';
+        btnNext.style.display = 'none';
+    }
+
+    // Renderizar la información del post y comentarios en el sidebar de perfil
+    renderizarSidebarPerfil(post);
+
+    // Mostrar la modal en pantalla
+    modal.style.display = 'flex';
+}
+
+// FUNCIÓN PARA RENDERIZAR LA INFORMACIÓN INTERNA (IGUAL QUE EN TU MURO)
+function renderizarSidebarPerfil(post) {
+    const sidebarDiv = document.getElementById('perfil-sidebar-comments');
+    if (!sidebarDiv) return;
+
+    sidebarDiv.innerHTML = '';
+
+    // --- 1. ENCABEZADO DE COMENTARIOS ---
+    const navyHeaderHtml = `
+        <div style="background-color: #001a4d; color: white; padding: 12px 16px; width: 100%; box-sizing: border-box; text-align: left !important; display: flex; align-items: center; justify-content: flex-start;">
+            <h4 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: white; font-family: sans-serif;">Comentarios</h4>
+        </div>
+    `;
+    sidebarDiv.innerHTML += navyHeaderHtml;
+
+    // --- 2. INFO PUBLICACIÓN ---
+    const tiempoPost = obtenerTiempoTranscurrido(post.fecha_publicacion);
+    
+    // --- CORRECCIÓN DE UNDEFINED (AUTOR) ---
+    // Si post.autor no existe, intentará post.usuario, y si no, usa el nombre del perfil actual
+    const nombreAutor = post.autor || post.usuario || nombrePerfil;
+
+    let htmlInfoPost = `
+        <div style="background-color: #e6f7ff; border: 1px solid #b3e0ff; padding: 16px; width: 100%; box-sizing: border-box; border-top: none; margin-bottom: 0;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <div style="width: 36px; height: 36px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; border: 1px solid #e2e8f0;">👤</div>
+                <div style="display: flex; flex-direction: column; line-height: 1.3;">
+                    <span style="font-weight: 700; color: #0f172a; font-size: 0.95rem; font-family: sans-serif;">${nombreAutor}</span>
+                    <span style="color: #64748b; font-size: 0.8rem;">· ${tiempoPost}</span>
+                </div>
+            </div>
+            <div style="color: #334155; font-family: sans-serif; text-align: left;">
+                ${post.precio ? `<div style="font-size: 1.25rem; color: #10b981; font-weight: 900; margin-bottom: 4px;">$${post.precio}</div>` : ''}
+                ${post.titulo ? `<div style="margin: 0 0 6px 0; color: #0f172a; font-size: 1.05rem; font-weight: 700;">${post.titulo}</div>` : ''}
+                <div style="margin: 0; color: #475569; line-height: 1.5; font-size: 0.95rem; white-space: pre-wrap;">${post.texto}</div>
+            </div>
+        </div>
+    `;
+    sidebarDiv.innerHTML += htmlInfoPost;
+
+    // --- 3. COMENTARIOS ---
+    const contenedorInternoComentarios = document.createElement('div');
+    contenedorInternoComentarios.style.cssText = "width: 100%; box-sizing: border-box; padding: 16px; display: block;";
+    sidebarDiv.appendChild(contenedorInternoComentarios);
+
+    const comentarios = post.comentarios || [];
+    
+    if (comentarios.length === 0) {
+        contenedorInternoComentarios.innerHTML = '<p style="color: #94a3b8; font-size: 0.9rem; margin: 0; font-family: sans-serif;">Sin comentarios aún. ¡Sé el primero!</p>';
+    } else {
+        comentarios.forEach((c, index) => {
+            const esMio = c.autor === (localStorage.getItem('nombreUsuario'));
+            const tiempoComentario = obtenerTiempoTranscurrido(c.fecha); 
+            
+            let htmlAcciones = '';
+            if (esMio) {
+                // El mismo menú flotante a la derecha con float: right
+                htmlAcciones = `
+                    <div style="position: relative; float: right;">
+                        <button onclick="toggleMenuComentarioPerfil(${index})" style="background: transparent; border: none; cursor: pointer; color: #64748b; font-size: 1.3rem; padding: 0 4px; font-weight: bold; outline: none;">⋮</button>
+                        
+                        <div id="menu-comentario-perfil-${index}" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 10; width: 110px; margin-top: 2px;">
+                            <button onclick="alert('Funcionalidad de editar comentario')" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; cursor: pointer; color: #334155; font-size: 0.85rem; border-bottom: 1px solid #f1f5f9;">✏️ Editar</button>
+                            <button onclick="alert('Funcionalidad de borrar comentario')" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; cursor: pointer; color: #ef4444; font-size: 0.85rem;">🗑️ Borrar</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            contenedorInternoComentarios.innerHTML += `
+                <div style="margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; font-family: sans-serif; clear: both;">
+                    <div style="margin-bottom: 4px;">
+                        ${htmlAcciones}
+                        <span style="font-weight: 700; color: #0f172a; font-size: 0.9rem; margin-right: 6px;">${c.autor}</span> 
+                        <span style="color: #94a3b8; font-size: 0.75rem;">· ${tiempoComentario}</span>
+                    </div>
+                    <p style="margin: 0; font-size: 0.9rem; color: #334155; line-height: 1.4; word-break: break-word;">${c.texto}</p>
+                </div>
+            `;
+        });
+    }
+}
+
+// UTILERÍAS EXCLUSIVAS DE LA MODAL DEL PERFIL
+function cerrarModalPerfil() {
+    document.getElementById('modal-publicacion-perfil').style.display = 'none';
+}
+
+function cambarImagenPerfil(direccion) {
+    indexVisorPerfil += direccion;
+    if (indexVisorPerfil < 0) indexVisorPerfil = imagenesActualesPerfil.length - 1;
+    if (indexVisorPerfil >= imagenesActualesPerfil.length) indexVisorPerfil = 0;
+    document.getElementById('perfil-modal-img').src = imagenesActualesPerfil[indexVisorPerfil];
+}
+
+function toggleMenuComentarioPerfil(index) {
+    const menu = document.getElementById(`menu-comentario-perfil-${index}`);
+    if (menu) {
+        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    }
+}
+
+// Función auxiliar de tiempo por si no está compartida globalmente
+function obtenerTiempoTranscurrido(fechaStr) {
+    if (!fechaStr) return "Hace un momento";
+    const ahora = new Date();
+    const pasada = new Date(fechaStr);
+    const difMs = ahora - pasada;
+    const difMin = Math.floor(difMs / 60000);
+    if (difMin < 1) return "Ahora mismo";
+    if (difMin < 60) return `Hace ${difMin} min`;
+    const difHoras = Math.floor(difMin / 60);
+    if (difHoras < 24) return `Hace ${difHoras} h`;
+    const difDias = Math.floor(difHoras / 24);
+    return `Hace ${difDias} d`;
 }
 
 // --- 5. FUNCIÓN PARA ACTUALIZAR MUNICIPIOS EN CASCADA ---
