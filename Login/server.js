@@ -51,8 +51,69 @@ app.use('/uploads', express.static('uploads'));
 
 let usuariosRegistrados = []; 
 let publicaciones = []; 
+let historialMensajes = [];
 let logEventos = []; 
 let rastroUsuarios = {}; 
+
+// ==========================================================================
+// 🚀 GESTIÓN DE MENSAJERÍA Y PERSISTENCIA (BACKEND)
+// ==========================================================================
+
+/**
+ * RUTA: Obtener el historial de una conversación específica.
+ * Esta ruta permite que, al abrir un chat, los mensajes no desaparezcan.
+ * Filtra la base de datos interna para traer solo los mensajes entre dos usuarios.
+ */
+app.get('/api/historial', (req, res) => {
+    // Extraemos los nombres de los usuarios desde los parámetros de la consulta (query)
+    const { yo, otro } = req.query;
+
+    // Filtramos el array global de mensajes:
+    // Buscamos donde (emisor es 'yo' y receptor es 'otro') O (emisor es 'otro' y receptor es 'yo')
+    const mensajesFiltrados = historialMensajes.filter(m => 
+        (m.emisor === yo && m.receptor === otro) || 
+        (m.emisor === otro && m.receptor === yo)
+    );
+
+    // Enviamos al frontend solo la conversación privada resultante
+    res.json(mensajesFiltrados);
+});
+
+/**
+ * RUTA: Lista de Chats Activos (Bandeja de Entrada estilo WhatsApp).
+ * Esta ruta agrupa los mensajes para mostrar una lista de personas con las que se ha hablado,
+ * incluyendo el último mensaje enviado y la hora, evitando duplicados.
+ */
+app.get('/api/mis-chats/:nombreUsuario', (req, res) => {
+    const usuario = req.params.nombreUsuario;
+    
+    // Filtramos todos los mensajes donde el usuario ha participado
+    const misMensajes = historialMensajes.filter(m => 
+        m.emisor === usuario || m.receptor === usuario
+    );
+
+    const listaContactos = {};
+
+    // Procesamos los mensajes para obtener solo el último contacto de cada conversación
+    misMensajes.forEach(m => {
+        // Identificamos quién es la otra persona en la conversación
+        const otro = (m.emisor === usuario) ? m.receptor : m.emisor;
+        
+        // Si no tenemos a este contacto en la lista, o si este mensaje es más reciente que el guardado:
+        if (!listaContactos[otro] || new Date(m.fechaIso) > new Date(listaContactos[otro].fechaIso)) {
+            listaContactos[otro] = {
+                nombre: otro,
+                ultimoMensaje: m.texto,
+                hora: m.hora,
+                fechaIso: m.fechaIso, // Usado para ordenar por fecha real
+                foto: m.fotoEmisor || './icons/user-circle.svg'
+            };
+        }
+    });
+
+    // Convertimos el objeto en un array y lo enviamos al frontend
+    res.json(Object.values(listaContactos));
+});
 
 function eliminarArchivos(listaRutas) {
     listaRutas.forEach(ruta => {
@@ -490,22 +551,56 @@ app.post('/limpiar-servidor', (req, res) => {
 });
 
 // ==========================================
-// 🚀 2. LÓGICA DEL CHAT (WEBSOCKETS)
+// 🚀 2. LÓGICA DEL CHAT (CON MEMORIA)
 // ==========================================
 io.on('connection', (socket) => {
-    console.log('💬 Usuario conectado al chat: ' + socket.id);
-
     socket.on('enviar-mensaje', (data) => {
-        io.emit('mostrar-mensaje', {
+        const mensajeNuevo = {
+            emisor: data.emisor,    
+            receptor: data.receptor, 
             texto: data.texto,
-            id: socket.id,
-            hora: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
-        });
-    });
+            fotoEmisor: data.fotoEmisor || '/icons/user-circle.svg',
+            hora: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
+            fechaIso: new Date().toISOString()
+        };
 
-    socket.on('disconnect', () => {
-        console.log('🚪 Usuario desconectado del chat');
+        historialMensajes.push(mensajeNuevo);
+        io.emit('mostrar-mensaje', mensajeNuevo);
     });
+});
+
+/**
+ * RUTA: Historial de mensajes entre dos personas.
+ * Se encarga de rellenar el chat cuando entras a ver una conversación.
+ */
+app.get('/api/historial', (req, res) => {
+    const { yo, otro } = req.query;
+    // Filtramos el historial global para sacar solo la charla privada
+    const chatPrivado = historialMensajes.filter(m => 
+        (m.emisor === yo && m.receptor === otro) || 
+        (m.emisor === otro && m.receptor === yo)
+    );
+    res.json(chatPrivado);
+});
+
+// RUTA DE BANDEJA DE ENTRADA DEL CHAT - OBTENER CONVERSACIONES
+app.get('/api/mis-chats/:nombreUsuario', (req, res) => {
+    const usuario = req.params.nombreUsuario;
+    const misMensajes = historialMensajes.filter(m => m.emisor === usuario || m.receptor === usuario);
+    const listaContactos = {};
+
+    misMensajes.forEach(m => {
+        const otro = (m.emisor === usuario) ? m.receptor : m.emisor;
+        if (!listaContactos[otro] || new Date(m.fechaIso) > new Date(listaContactos[otro].fechaIso)) {
+            listaContactos[otro] = {
+                nombre: otro,
+                ultimoMensaje: m.texto,
+                hora: m.hora,
+                foto: m.fotoEmisor 
+            };
+        }
+    });
+    res.json(Object.values(listaContactos));
 });
 
 // ==========================================
