@@ -556,99 +556,94 @@ function renderizarPostsEnMuro() {
         let claseEstado = estadoActual === 'vendido' ? 'vendido' : (estadoActual === 'en trato' ? 'en-trato' : 'disponible');
         let textoEstado = estadoActual === 'vendido' ? 'VENDIDO' : (estadoActual === 'en trato' ? 'En Trato' : 'Disponible');
 
+        // --- 1. MENÚ DE 3 PUNTOS (Corregido sin display inline para que funcione tu toggle) ---
         let menuHtml = '';
         if (esDuenioPost || esMod) {
             menuHtml = `
-            <div class="menu-container" style="position: absolute; right: 20px; top: 20px; z-index: 10;">
-                <button class="btn-menu-trigger" onclick="toggleMenu(event, ${post.id})" style="font-size: 1.5rem; background: transparent; border: none; cursor: pointer; color: #64748b;">⋮</button>
-                <div class="menu-dropdown" id="menu-${post.id}" style="position: absolute; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; min-width: 160px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            <div class="menu-container" style="position: absolute; right: 12px; top: 12px; z-index: 50;">
+                <button class="btn-menu-trigger" onclick="toggleMenu(event, ${post.id})" style="font-size: 1.4rem; background: rgba(255, 255, 255, 0.9); border-radius: 50%; width: 34px; height: 34px; border: 1px solid #e2e8f0; cursor: pointer; color: #475569; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.1); font-weight: bold;">⋮</button>
+                <div class="menu-dropdown" id="menu-${post.id}" style="position: absolute; right: 0; top: 38px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px; min-width: 150px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
                     ${esDuenioPost ? `
-                        <button onclick="prepararEdicion(${post.id})" style="width: 100%; text-align: left; padding: 8px; border: none; background: none; cursor: pointer; color: #334155; border-radius: 4px;">✏️ Editar</button>
+                        <button onclick="prepararEdicion(${post.id})" style="width: 100%; text-align: left; padding: 8px 12px; border: none; background: none; cursor: pointer; color: #334155; font-size: 0.9rem; border-radius: 4px;">✏️ Editar</button>
                         <hr style="margin: 4px 0; border: none; border-top: 1px solid #e2e8f0;">
-                        ${estadoActual !== 'disponible' ? `<button onclick="cambiarEstado(${post.id}, 'disponible')" style="width: 100%; text-align: left; padding: 8px; border: none; background: none; cursor: pointer; color: #334155;">✅ Disponible</button>` : ''}
-                        ${estadoActual !== 'en trato' ? `<button onclick="cambiarEstado(${post.id}, 'en trato')" style="width: 100%; text-align: left; padding: 8px; border: none; background: none; cursor: pointer; color: #334155;">🤝 En trato</button>` : ''}
-                        ${estadoActual !== 'vendido' ? `<button onclick="cambiarEstado(${post.id}, 'vendido')" style="width: 100%; text-align: left; padding: 8px; border: none; background: none; cursor: pointer; color: #334155;">❌ Vendido</button>` : ''}
+                        ${estadoActual !== 'disponible' ? `<button onclick="cambiarEstado(${post.id}, 'disponible')" style="width: 100%; text-align: left; padding: 8px 12px; border: none; background: none; cursor: pointer; color: #334155; font-size: 0.9rem;">✅ Disponible</button>` : ''}
+                        ${estadoActual !== 'en trato' ? `<button onclick="cambiarEstado(${post.id}, 'en trato')" style="width: 100%; text-align: left; padding: 8px 12px; border: none; background: none; cursor: pointer; color: #334155; font-size: 0.9rem;">🤝 En trato</button>` : ''}
+                        ${estadoActual !== 'vendido' ? `<button onclick="cambiarEstado(${post.id}, 'vendido')" style="width: 100%; text-align: left; padding: 8px 12px; border: none; background: none; cursor: pointer; color: #334155; font-size: 0.9rem;">❌ Vendido</button>` : ''}
                         <hr style="margin: 4px 0; border: none; border-top: 1px solid #e2e8f0;">
                     ` : ''}
-                    <button onclick="borrarPost(${post.id}, '${post.autor}')" style="width: 100%; text-align: left; padding: 8px; border: none; background: none; cursor: pointer; color: #ef4444; border-radius: 4px;">🗑️ Borrar</button>
+                    <button onclick="borrarPost(${post.id}, '${post.autor}')" style="width: 100%; text-align: left; padding: 8px 12px; border: none; background: none; cursor: pointer; color: #ef4444; font-size: 0.9rem; font-radius: 4px;">🗑️ Borrar</button>
                 </div>
             </div>`;
         }
 
-        let htmlImagenes = '';
-        if (post.imagenes?.length === 1) {
-            htmlImagenes = `<img src="${post.imagenes[0]}" class="img-unica" onclick="abrirVisor(${post.id}, 0)" style="max-height: 400px; object-fit: cover; width: 100%; border-radius: 12px; cursor: pointer; margin-top: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">`;
-        } else if (post.imagenes?.length > 1) {
-            htmlImagenes = `<div class="post-images-grid" id="grid-${post.id}" style="margin-top: 15px; border-radius: 12px; overflow: hidden;">`;
-            post.imagenes.slice(0, 4).forEach((url, i) => {
-                if (i === 3 && post.imagenes.length > 4) {
-                    htmlImagenes += `
-                        <div style="position: relative; cursor: pointer;" onclick="abrirVisor(${post.id}, ${i})">
-                            <img src="${url}" style="width: 100%; height: 100%; object-fit: cover;">
-                            <div class="more-photos-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); color:white; display:flex; align-items:center; justify-content:center; font-size: 1.5rem; font-weight: bold;">+${post.imagenes.length - 4}</div>
-                        </div>`;
-                } else {
-                    htmlImagenes += `<img src="${url}" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;" onclick="abrirVisor(${post.id}, ${i})">`;
-                }
-            });
-            htmlImagenes += `</div>`;
+        // --- 2. IMAGEN PRINCIPAL ---
+        let urlImagenPrincipal = 'https://via.placeholder.com/300x200?text=Sin+Imagen';
+        let indicadorGaleria = '';
+        if (post.imagenes && post.imagenes.length > 0) {
+            urlImagenPrincipal = post.imagenes[0];
+            if (post.imagenes.length > 1) {
+                indicadorGaleria = `<div class="indicador-galeria">1/${post.imagenes.length}</div>`;
+            }
         }
 
-        let htmlComentarios = '<div class="seccion-comentarios-preview" style="margin-top: 15px;">';
-        const comentarios = post.comentarios || [];
-        
-        comentarios.slice(0, 2).forEach(c => {
-            htmlComentarios += `<div style="font-size: 0.95rem; margin-bottom: 8px; color: #334155; background: #f8fafc; padding: 8px 12px; border-radius: 8px;">
-                <strong onclick="verPerfil('${c.autor}')" style="color: #0f172a; cursor: pointer;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${c.autor}</strong>: ${c.texto}
-            </div>`;
-        });
-
-        if (comentarios.length > 2) {
-            htmlComentarios += `<button class="btn-ver-mas-comentarios" onclick="abrirVisor(${post.id}, 0)" style="background: none; border: none; color: #3b82f6; cursor: pointer; padding: 0; font-size: 0.95rem; margin-top: 5px; font-weight: 500;">Ver los ${comentarios.length} comentarios</button>`;
-        } else {
-            htmlComentarios += `<button class="btn-ver-mas-comentarios" onclick="abrirVisor(${post.id}, 0)" style="background: none; border: none; color: #64748b; cursor: pointer; padding: 0; font-size: 0.95rem; margin-top: 5px; font-weight: 500;">💬 Agregar un comentario...</button>`;
-        }
-        htmlComentarios += '</div>';
-
+        // --- 3. DATOS Y COMENTARIOS ---
         const tiempoPost = obtenerTiempoTranscurrido(post.fecha_publicacion);
-        const etiquetaCategoria = post.categoria ? `<span style="background: #f1f5f9; color: #475569; padding: 4px 12px; border-radius: 16px; font-size: 0.8rem; font-weight: 600; border: 1px solid #e2e8f0;">🏷️ ${post.categoria}</span>` : '';
+        const etiquetaCategoria = post.categoria ? `<span class="tag-condicion" style="background: #f1f5f9; color: #475569;">🏷️ ${post.categoria}</span>` : '';
 
         let iconoCondicion = '';
         if(post.condicion === 'Nuevo') iconoCondicion = '✨ ';
         if(post.condicion === 'Buen estado') iconoCondicion = '👍 ';
         if(post.condicion === 'Usado') iconoCondicion = '📦 ';
-        const etiquetaCondicion = post.condicion ? `<span style="background: #fef9c3; color: #a16207; padding: 4px 12px; border-radius: 16px; font-size: 0.8rem; font-weight: 600; border: 1px solid #fef08a;">${iconoCondicion}${post.condicion.replace('✨ ', '').replace('👍 ', '').replace('📦 ', '')}</span>` : '';
+        const etiquetaCondicion = post.condicion ? `<span class="tag-condicion">${iconoCondicion}${post.condicion.replace('✨ ', '').replace('👍 ', '').replace('📦 ', '')}</span>` : '';
 
+        let htmlComentarios = '<div class="seccion-comentarios-preview">';
+        const comentarios = post.comentarios || [];
+        comentarios.slice(0, 1).forEach(c => {
+            htmlComentarios += `<div style="font-size: 0.85rem; margin-bottom: 6px; color: #475569; background: #f8fafc; padding: 6px 10px; border-radius: 6px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;">
+                <strong onclick="verPerfil('${c.autor}')" style="color: #0f172a; cursor: pointer;">${c.autor}</strong>: ${c.texto}
+            </div>`;
+        });
+
+        if (comentarios.length > 1) {
+            htmlComentarios += `<button onclick="abrirVisor(${post.id}, 0)" style="background: none; border: none; color: #3b82f6; cursor: pointer; padding: 0; font-size: 0.85rem; font-weight: 500;">Ver los ${comentarios.length} comentarios</button>`;
+        } else {
+            htmlComentarios += `<button onclick="abrirVisor(${post.id}, 0)" style="background: none; border: none; color: #64748b; cursor: pointer; padding: 0; font-size: 0.85rem; font-weight: 500;">💬 Comentar...</button>`;
+        }
+        htmlComentarios += '</div>';
+
+        // --- 4. INSERTAR TARJETA ---
         postsDiv.innerHTML += `
-            <div class="post ${estadoActual === 'vendido' ? 'post-vendido' : ''}" style="position: relative; padding: 24px; border: 1px solid #f1f5f9; background: white; margin-bottom: 24px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.04);">
+            <div class="card-producto ${estadoActual === 'vendido' ? 'card-vendido' : ''}" id="post-${post.id}">
                 ${menuHtml}
                 
-                <div style="display: flex; align-items: center; margin-bottom: 16px;">
-                    <div style="width: 42px; height: 42px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; margin-right: 12px;">👤</div>
-                    <div>
-                        <div onclick="verPerfil('${post.autor}')" style="font-weight: 700; color: #1e293b; font-size: 1.05rem; cursor: pointer;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${post.autor}</div>
-                        <div style="color: #94a3b8; font-size: 0.85rem;">${tiempoPost}</div>
+                <div class="card-img-container" onclick="abrirVisor(${post.id}, 0)">
+                    <img src="${urlImagenPrincipal}" alt="${post.titulo || 'Producto'}" class="card-img-top">
+                    ${indicadorGaleria}
+                </div>
+                
+                <div class="card-body">
+                    <div class="card-header-info">
+                        ${post.precio ? `<span class="card-precio">$${post.precio}</span>` : ''}
+                        <span class="badge ${claseEstado} card-badge-estado">${textoEstado}</span>
                     </div>
+                    
+                    ${post.titulo ? `<h3 class="card-titulo" title="${post.titulo}">${post.titulo}</h3>` : ''}
+                    
+                    <div class="card-vendedor-info">
+                        <span class="vendedor-nombre" onclick="verPerfil('${post.autor}')">${post.autor}</span>
+                        <span class="vendedor-tiempo">${tiempoPost}</span>
+                    </div>
+
+                    <div class="card-etiquetas">
+                        ${etiquetaCategoria}
+                        ${etiquetaCondicion}
+                    </div>
+                    
+                    ${post.municipio && post.estado ? `<div class="card-ubicacion">📍 ${post.municipio}</div>` : ''}
+                    
+                    <hr class="card-divisor">
+                    ${htmlComentarios}
                 </div>
-
-                ${post.precio ? `<div style="font-size: 1.6rem; color: #10b981; font-weight: 900; margin-bottom: 4px;">$${post.precio}</div>` : ''}
-                ${post.titulo ? `<h3 style="margin: 0 0 12px 0; color: #0f172a; font-size: 1.25rem; font-weight: 700;">${post.titulo}</h3>` : ''}
-
-                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
-                    <span class="badge ${claseEstado}" style="padding: 4px 12px; font-size: 0.8rem;">${textoEstado}</span>
-                    ${etiquetaCategoria}
-                    ${etiquetaCondicion}
-                </div>
-
-                ${post.municipio && post.estado ? `<div style="color: #64748b; font-size: 0.9rem; margin-bottom: 16px; display: flex; align-items: center;">📍 ${post.municipio}, ${post.estado}</div>` : ''}
-                
-                <p style="margin: 0 0 16px 0; color: #475569; line-height: 1.6; font-size: 1rem;">${post.texto}</p>
-                
-                ${htmlImagenes}
-
-                <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 20px 0;">
-
-                ${htmlComentarios}
             </div>`;
     });
 }

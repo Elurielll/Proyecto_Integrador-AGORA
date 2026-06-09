@@ -74,48 +74,82 @@ const MODERADOR = { email: "mod@agora.com", pass: "mod123", role: "moderador", n
 app.post('/register', (req, res) => {
     const { fullname, email_reg, password_reg } = req.body;
 
-    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&._-])[A-Za-z\d@$!%*#?&._-]{1,8}$/;
+    // Validación de seguridad de backend (Actualizado a 8-12 caracteres)
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&._-])[A-Za-z\d@$!%*#?&._-]{8,12}$/;
 
     if (!passwordRegex.test(password_reg)) {
         return res.status(400).json({
-            message: "La contraseña debe tener máximo 8 caracteres, incluir letras, números y símbolos."
+            message: "La contraseña no cumple con los requisitos mínimos de seguridad."
         });
     }
 
-    const sql = `INSERT INTO usuarios (nombre, correo, contrasena) VALUES (?, ?, ?)`;
-    
-    db.query(sql, [fullname, email_reg, password_reg], (err, result) => {
+    // 1. Comprobar si el usuario o el correo ya existen en la base de datos
+    const checkSql = 'SELECT nombre, correo FROM usuarios WHERE nombre = ? OR correo = ?';
+    db.query(checkSql, [fullname, email_reg], (err, results) => {
         if (err) {
-            console.error('❌ Error al insertar en MySQL (Registro):', err);
-            return res.status(500).send("Error en el servidor al registrar");
+            console.error('❌ Error al buscar duplicados:', err);
+            return res.status(500).json({ message: "Error interno del servidor" });
         }
+
+        if (results.length > 0) {
+            // Revisamos exactamente qué fue lo que chocó (Nombre o Correo)
+            const usuarioOcupado = results.find(u => u.nombre.toLowerCase() === fullname.toLowerCase());
+            if (usuarioOcupado) {
+                return res.status(400).json({ error: 'user_exists', message: "El usuario ya existe" });
+            }
+            
+            const correoOcupado = results.find(u => u.correo.toLowerCase() === email_reg.toLowerCase());
+            if (correoOcupado) {
+                return res.status(400).json({ error: 'email_exists', message: "El correo ya existe" });
+            }
+        }
+
+        // 2. Si no hay duplicados, guardamos el nuevo usuario
+        const sql = `INSERT INTO usuarios (nombre, correo, contrasena) VALUES (?, ?, ?)`;
         
-        registrarEvento(fullname, "user", "Registro Nuevo", `Email: ${email_reg}`);
-        res.status(200).send("Registro exitoso");
+        db.query(sql, [fullname, email_reg, password_reg], (err, result) => {
+            if (err) {
+                console.error('❌ Error al insertar en MySQL (Registro):', err);
+                return res.status(500).json({ message: "Error en el servidor al registrar" });
+            }
+            
+            registrarEvento(fullname, "user", "Registro Nuevo", `Email: ${email_reg}`);
+            res.status(200).json({ message: "Registro exitoso" });
+        });
     });
 });
 
 app.post('/login', (req, res) => {
     const { email, password } = req.body;
-    // ... (lógica de admin y moderador se queda igual)
+    
+    // (Nota: Si tenías lógica hardcodeada de ADMIN_SERVER y MODERADOR aquí arriba, 
+    // asegúrate de mantenerla antes de la consulta a la base de datos)
 
-    const sql = 'SELECT * FROM usuarios WHERE correo = ? AND contrasena = ?';
-    db.query(sql, [email, password], (err, results) => {
+    // 1. Buscamos SOLO por correo primero
+    const sql = 'SELECT * FROM usuarios WHERE correo = ?';
+    db.query(sql, [email], (err, results) => {
         if (err) return res.status(500).json({ message: "Error en el servidor" });
 
-        if (results.length > 0) {
-            const u = results[0]; 
-            registrarEvento(u.nombre, "user", "Inicio de Sesión");
-            
-            // --- CAMBIO AQUÍ: Enviamos también el u.id ---
-            return res.json({ 
-                role: 'user', 
-                nombre: u.nombre, 
-                id: u.id  // <--- Esto es vital
-            });
-        } else {
-            res.status(401).json({ message: "Correo o contraseña incorrectos" });
+        // 2. Si no hay resultados, significa que el correo no existe
+        if (results.length === 0) {
+            return res.status(401).json({ error: 'wrong_email', message: "Correo no registrado" });
         }
+
+        const u = results[0]; 
+
+        // 3. Verificamos si la contraseña coincide
+        if (u.contrasena !== password) {
+            return res.status(401).json({ error: 'wrong_password', message: "Contraseña incorrecta" });
+        }
+        
+        // 4. Si todo es correcto, damos acceso
+        registrarEvento(u.nombre, "user", "Inicio de Sesión");
+        
+        return res.json({ 
+            role: 'user', 
+            nombre: u.nombre, 
+            id: u.id 
+        });
     });
 });
 

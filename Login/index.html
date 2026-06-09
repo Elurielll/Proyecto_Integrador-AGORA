@@ -24,9 +24,12 @@
                     </div>
                     
                     <div class="input">
-                        <label for="password">Contraseña</label>
-                        <input type="password" name="password" id="password" placeholder="Tu contraseña" required>
-                    </div>
+    <label for="password">Contraseña</label>
+    <div class="password-wrapper" style="position: relative; display: flex; align-items: center; width: 100%;">
+        <input type="password" name="password" id="password" placeholder="Tu contraseña" required style="width: 100%; padding-right: 40px;">
+        <button type="button" onclick="togglePassword('password', this)" style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0; line-height: 1;">👁️</button>
+    </div>
+</div>
                     
                     <div class="buttons">
                         <button type="submit">Iniciar Sesión</button>
@@ -54,14 +57,16 @@
                     </div>
                     
                     <div class="input">
-                        <label for="password-reg">Contraseña</label>
-                        <input 
-                        type="password" name="password_reg" 
-                        id="password-reg" placeholder="Máx 8 caracteres, letras, números y símbolos"
-                         maxlength="8" pattern="^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&._-]).{1,8}$" 
-                         title="La contraseña debe tener máximo 8 caracteres e incluir letras, números y símbolos."
-                         required>
-                    </div>
+    <label for="password-reg">Contraseña</label>
+    <div class="password-wrapper" style="position: relative; display: flex; align-items: center; width: 100%;">
+        <input 
+            type="password" name="password_reg" 
+            id="password-reg" placeholder="De 8 a 12 caracteres (Mayús, número y símbolo)"
+            maxlength="12" 
+            required style="width: 100%; padding-right: 40px;">
+        <button type="button" onclick="togglePassword('password-reg', this)" style="position: absolute; right: 10px; background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0; line-height: 1;">👁️</button>
+    </div>
+</div>
                     
                     <div class="buttons">
                         <button type="submit">Registrar</button>
