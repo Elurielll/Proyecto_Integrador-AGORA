@@ -5,7 +5,7 @@ const fs = require('fs');
 const app = express();
 
 // ==========================================
-// 🚀 1. NUEVAS HERRAMIENTAS PARA EL CHAT
+// 🚀 1. NUEVAS HERRAMIENTAS PARA EL CHAT Y DB
 // ==========================================
 const mysql = require('mysql2');
 
@@ -68,13 +68,17 @@ function registrarEvento(usuario, rol, accion, detalles = "") {
     console.log(`[${evento.fecha}] ${usuario} (${rol}): ${accion}`);
 }
 
-const ADMIN_SERVER = { email: "admin@servidor.com", pass: "root123", role: "admin_server", nombre: "Admin" };
-const MODERADOR = { email: "mod@agora.com", pass: "mod123", role: "moderador", nombre: "Moderador" };
+// ==========================================
+// 🛡️ REQUISITO DB: Recuerda agregar las columnas en MySQL si no existen:
+// usuarios -> rol (VARCHAR, default 'user'), estado_aprobacion (VARCHAR, default 'pendiente')
+// publicaciones -> estado_aprobacion (VARCHAR, default 'pendiente')
+// ==========================================
 
+// --- REGISTRO CON SOLICITUD ---
 app.post('/register', (req, res) => {
     const { fullname, email_reg, password_reg } = req.body;
 
-    // Validación de seguridad de backend (Actualizado a 8-12 caracteres)
+    // Validación de seguridad de backend (8-12 caracteres)
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&._-])[A-Za-z\d@$!%*#?&._-]{8,12}$/;
 
     if (!passwordRegex.test(password_reg)) {
@@ -92,7 +96,6 @@ app.post('/register', (req, res) => {
         }
 
         if (results.length > 0) {
-            // Revisamos exactamente qué fue lo que chocó (Nombre o Correo)
             const usuarioOcupado = results.find(u => u.nombre.toLowerCase() === fullname.toLowerCase());
             if (usuarioOcupado) {
                 return res.status(400).json({ error: 'user_exists', message: "El usuario ya existe" });
@@ -104,8 +107,8 @@ app.post('/register', (req, res) => {
             }
         }
 
-        // 2. Si no hay duplicados, guardamos el nuevo usuario
-        const sql = `INSERT INTO usuarios (nombre, correo, contrasena) VALUES (?, ?, ?)`;
+        // 2. Si no hay duplicados, guardamos el nuevo usuario con rol predeterminado y estado PENDIENTE
+        const sql = `INSERT INTO usuarios (nombre, correo, contrasena, rol, estado_aprobacion) VALUES (?, ?, ?, 'user', 'pendiente')`;
         
         db.query(sql, [fullname, email_reg, password_reg], (err, result) => {
             if (err) {
@@ -113,40 +116,58 @@ app.post('/register', (req, res) => {
                 return res.status(500).json({ message: "Error en el servidor al registrar" });
             }
             
-            registrarEvento(fullname, "user", "Registro Nuevo", `Email: ${email_reg}`);
-            res.status(200).json({ message: "Registro exitoso" });
+            registrarEvento(fullname, "user", "Solicitud de Registro", `Email: ${email_reg}`);
+            // Mensaje corto y profesional solicitado
+            res.status(200).json({ 
+                message: "Solicitud de registro enviada con éxito. Nuestro equipo revisará tu cuenta en un plazo de 24 hrs." 
+            });
         });
     });
 });
 
+// --- INICIO DE SESIÓN CON FILTRO DE APROBACIÓN ---
 app.post('/login', (req, res) => {
     const { email, password } = req.body;
     
-    // (Nota: Si tenías lógica hardcodeada de ADMIN_SERVER y MODERADOR aquí arriba, 
-    // asegúrate de mantenerla antes de la consulta a la base de datos)
+    // Cuenta Administrativa Maestra para el Panel Aparte (No depende de solicitudes)
+    if (email === "admin@servidor.com" && password === "root123") {
+        registrarEvento("Admin", "admin_server", "Inicio de Sesión (Panel)");
+        return res.json({ 
+            role: 'admin_server', 
+            nombre: 'Administrador Principal', 
+            id: 0 
+        });
+    }
 
-    // 1. Buscamos SOLO por correo primero
+    // 1. Buscamos por correo en la base de datos
     const sql = 'SELECT * FROM usuarios WHERE correo = ?';
     db.query(sql, [email], (err, results) => {
         if (err) return res.status(500).json({ message: "Error en el servidor" });
 
-        // 2. Si no hay resultados, significa que el correo no existe
         if (results.length === 0) {
             return res.status(401).json({ error: 'wrong_email', message: "Correo no registrado" });
         }
 
         const u = results[0]; 
 
-        // 3. Verificamos si la contraseña coincide
+        // 2. Verificamos la contraseña
         if (u.contrasena !== password) {
             return res.status(401).json({ error: 'wrong_password', message: "Contraseña incorrecta" });
         }
         
-        // 4. Si todo es correcto, damos acceso
-        registrarEvento(u.nombre, "user", "Inicio de Sesión");
+        // 3. ⚠️ NUEVA RESTRICCIÓN: Verificar el estado de la solicitud
+        if (u.estado_aprobacion === 'pendiente') {
+            return res.status(403).json({ message: "Tu solicitud de registro está bajo revisión por nuestro equipo." });
+        }
+        if (u.estado_aprobacion === 'rechazado') {
+            return res.status(403).json({ message: "Tu solicitud de acceso a la plataforma ha sido rechazada." });
+        }
+        
+        // 4. Si es aprobado, damos acceso con su ROL dinámico desde la DB ('user' o 'moderator')
+        registrarEvento(u.nombre, u.rol, "Inicio de Sesión");
         
         return res.json({ 
-            role: 'user', 
+            role: u.rol, // Puede retornar 'user' o 'moderator'
             nombre: u.nombre, 
             id: u.id 
         });
@@ -154,30 +175,25 @@ app.post('/login', (req, res) => {
 });
 
 app.get('/api/perfil/:nombre', (req, res) => {
-    // Pedimos explícitamente la columna foto_perfil
-    const sql = 'SELECT nombre, correo, bio, estado, municipio, foto_perfil FROM usuarios WHERE nombre = ?';
+    const sql = 'SELECT nombre, correo, bio, estado, municipio, foto_perfil, rol FROM usuarios WHERE nombre = ?';
     
     db.query(sql, [req.params.nombre], (err, results) => {
         if (err || results.length === 0) {
             return res.status(404).json({ message: "Usuario no encontrado" });
         }
-
-        // Enviamos los datos al navegador
-        const usuario = results[0];
-        res.json(usuario);
+        res.json(results[0]);
     });
 });
 
 app.get('/api/publicaciones/usuario/:nombre', (req, res) => {
-    // Aquí está el sqlPosts que se había borrado
     const sqlPosts = `SELECT p.* FROM publicaciones p 
                       JOIN usuarios u ON p.id_usuario = u.id 
-                      WHERE u.nombre = ? ORDER BY p.fecha_publicacion DESC`;
+                      WHERE u.nombre = ? AND p.estado_aprobacion = 'aprobado' 
+                      ORDER BY p.fecha_publicacion DESC`;
     
     db.query(sqlPosts, [req.params.nombre], (err, posts) => {
         if (err) return res.status(500).json({ message: "Error al obtener posts del usuario" });
         
-        // Y aquí está el sqlComments actualizado
         const sqlComments = `
             SELECT 
                 c.id, 
@@ -186,7 +202,8 @@ app.get('/api/publicaciones/usuario/:nombre', (req, res) => {
                 c.comentario AS texto, 
                 c.comentario AS textoComentario, 
                 c.fecha, 
-                u.nombre AS autor 
+                u.nombre AS autor,
+                u.rol AS autor_rol
             FROM comentarios c
             JOIN usuarios u ON c.id_usuario = u.id
             ORDER BY c.fecha ASC`;
@@ -206,68 +223,33 @@ app.get('/api/publicaciones/usuario/:nombre', (req, res) => {
 });
 
 app.post('/api/actualizar-perfil', (req, res) => {
-    // Es mucho más seguro recibir el ID del usuario desde el frontend
-    const { id, nombre, nuevoNombre, bio, municipio, estado } = req.body;
-
-    // Si tu frontend envía el ID, úsalo en el WHERE. 
-    // Si aún usas el nombre, asegúrate de que el frontend sepa que el nombre cambió.
-    const sql = `UPDATE usuarios 
-                 SET nombre = ?, bio = ?, municipio = ?, estado = ? 
-                 WHERE nombre = ?`;
+    const { nombre, nuevoNombre, bio, municipio, estado } = req.body;
+    const sql = `UPDATE usuarios SET nombre = ?, bio = ?, municipio = ?, estado = ? WHERE nombre = ?`;
 
     db.query(sql, [nuevoNombre, bio, municipio, estado, nombre], (err, result) => {
-        if (err) {
-            console.error("❌ Error SQL al actualizar perfil:", err);
-            // Si el error dice 'Foreign key constraint fails', es por la relación con publicaciones
-            return res.status(500).json({ message: "Error al guardar los datos en la base de datos" });
-        }
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ message: "Usuario no encontrado" });
-        }
+        if (err) return res.status(500).json({ message: "Error al guardar los datos en la base de datos" });
+        if (result.affectedRows === 0) return res.status(404).json({ message: "Usuario no encontrado" });
 
         registrarEvento(nuevoNombre, "user", "Actualizó su perfil", `Bio: ${bio}`);
-        res.status(200).json({ 
-            message: "Perfil actualizado correctamente",
-            nuevoNombre: nuevoNombre // Devolvemos el nuevo nombre para que el frontend lo actualice
-        });
+        res.status(200).json({ message: "Perfil actualizado correctamente", nuevoNombre: nuevoNombre });
     });
 });
 
 app.post('/api/actualizar-foto-perfil', upload.single('fotoPerfil'), (req, res) => {
-    // 1. Verificamos qué está llegando exactamente
     const nombreUsuario = req.body.nombreUsuario;
     const archivo = req.file;
 
-    console.log("--- Intento de actualización de foto ---");
-    console.log("Usuario recibido:", nombreUsuario);
-    console.log("Archivo recibido:", archivo ? archivo.filename : "NINGUNO");
-
-    if (!archivo) {
-        return res.status(400).json({ message: "No se recibió ninguna imagen" });
-    }
-
-    if (!nombreUsuario) {
-        return res.status(400).json({ message: "No se recibió el nombre del usuario" });
+    if (!archivo || !nombreUsuario) {
+        return res.status(400).json({ message: "Datos incompletos" });
     }
 
     const nuevaRutaFoto = `/uploads/${archivo.filename}`;
-
-    // 2. Actualizamos la base de datos
     const sql = 'UPDATE usuarios SET foto_perfil = ? WHERE nombre = ?';
     
     db.query(sql, [nuevaRutaFoto, nombreUsuario], (err, result) => {
-        if (err) {
-            console.error("❌ Error SQL:", err);
-            return res.status(500).json({ message: "Error en la base de datos" });
-        }
+        if (err) return res.status(500).json({ message: "Error en la base de datos" });
+        if (result.affectedRows === 0) return res.status(404).json({ message: "Usuario no encontrado" });
 
-        if (result.affectedRows === 0) {
-            console.log("⚠️ No se encontró al usuario en la DB para actualizar la foto");
-            return res.status(404).json({ message: "Usuario no encontrado" });
-        }
-
-        console.log("✅ Foto guardada en DB con éxito para:", nombreUsuario);
         res.status(200).json({ message: "Foto actualizada", nuevaRuta: nuevaRutaFoto });
     });
 });
@@ -282,63 +264,62 @@ app.post('/track-online', (req, res) => {
     res.sendStatus(200);
 });
 
-// --- PUBLICAR ---
-// --- PUBLICAR O GUARDAR BORRADOR ---
+// --- PUBLICAR EN MODO PENDIENTE ---
 app.post('/publicar', upload.array('imagenes', 5), (req, res) => {
-    // Recibimos 'estado_venta' desde el frontend (ej: 'Disponible' o 'Borrador')
     const { titulo, precio, estado, municipio, texto, autor, categoria, condicion, estado_venta } = req.body;
     const fotosPaths = req.files ? JSON.stringify(req.files.map(file => `/uploads/${file.filename}`)) : '[]';
 
-    // 1. Buscamos el ID del usuario basado en su nombre (autor)
     db.query('SELECT id FROM usuarios WHERE nombre = ?', [autor], (err, userResult) => {
         if (err || userResult.length === 0) {
             return res.status(400).json({ message: "Usuario autor no encontrado" });
         }
         
         const idUsuario = userResult[0].id;
-
-        // Determinar el estado final (Por defecto será 'Disponible' si no se envía)
         const tipoPublicacion = estado_venta || 'Disponible';
 
-        // ⚠️ RESPALDO ANTICRASH: Si es borrador y vienen vacíos, asignamos valores por defecto
-        // para que MySQL no truene por la restricción NOT NULL
         const finalTitulo = titulo ? titulo.trim() : (tipoPublicacion === 'Borrador' ? 'Borrador sin título' : '');
         const finalTexto = texto ? texto.trim() : (tipoPublicacion === 'Borrador' ? 'Sin descripción' : '');
-        const finalPrecio = precio ? parseFloat(precio) : 0.00;
+        // Asegurarnos de que sea un número válido. Si no lo es, forzamos un 0.
+        const precioParseado = parseFloat(precio);
+        const finalPrecio = isNaN(precioParseado) ? 0 : precioParseado;
+        // Si no es borrador, el precio TIENE que ser mayor estricto que 0
+        if (tipoPublicacion !== 'Borrador' && finalPrecio <= 0) {
+            return res.status(400).json({ message: "El precio del artículo debe ser mayor a $0." });
+        }
 
-        // 2. Insertamos la publicación con el tipo dinámico
+        // Si es un borrador va directo, pero si va a publicarse, cae en revisión manual ('pendiente')
+        const aprobacionInicial = (tipoPublicacion === 'Borrador') ? 'aprobado' : 'pendiente';
+
         const sql = `INSERT INTO publicaciones 
-                     (id_usuario, titulo, descripcion, precio, estado_venta, estado, municipio, categoria, condicion, fotos) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+                     (id_usuario, titulo, descripcion, precio, estado_venta, estado, municipio, categoria, condicion, fotos, estado_aprobacion) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         
-        const values = [idUsuario, finalTitulo, finalTexto, finalPrecio, tipoPublicacion, estado, municipio, categoria, condicion, fotosPaths];
+        const values = [idUsuario, finalTitulo, finalTexto, finalPrecio, tipoPublicacion, estado, municipio, categoria, condicion, fotosPaths, aprobacionInicial];
 
         db.query(sql, values, (err, result) => {
-            if (err) {
-                console.error("❌ Error real en MySQL al guardar/publicar:", err);
-                return res.status(500).json({ message: "Error al procesar la publicación" });
-            }
+            if (err) return res.status(500).json({ message: "Error al procesar la publicación" });
             
-            const accionLog = tipoPublicacion === 'Borrador' ? "Guardó Borrador" : "Nueva Publicación";
+            const accionLog = tipoPublicacion === 'Borrador' ? "Guardó Borrador" : "Envió Publicación a Revisión";
             registrarEvento(autor, "user", accionLog, `ID: ${result.insertId}`);
             
-            res.status(201).json({ id: result.insertId, estado_venta: tipoPublicacion });
+            res.status(201).json({ id: result.insertId, estado_venta: tipoPublicacion, estado_aprobacion: aprobacionInicial });
         });
     });
 });
 
+// --- LEER POSTS (SÓLO LOS APROBADOS POR EL ADMIN) ---
 app.get('/get-posts', (req, res) => {
-    // 1. Traemos las publicaciones
+    // Agregamos el filtro WHERE estado_aprobacion = 'aprobado' e incluimos el 'rol' del autor
     const sqlPosts = `
-        SELECT p.*, u.nombre AS autor 
+        SELECT p.*, u.nombre AS autor, u.rol AS autor_rol 
         FROM publicaciones p 
         JOIN usuarios u ON p.id_usuario = u.id 
+        WHERE p.estado_aprobacion = 'aprobado'
         ORDER BY p.fecha_publicacion DESC`;
 
     db.query(sqlPosts, (err, posts) => {
         if (err) return res.status(500).send(err);
         
-        // 2. Traemos TODOS los comentarios unidos con el nombre de su autor
         const sqlComments = `
             SELECT 
                 c.id, 
@@ -347,7 +328,8 @@ app.get('/get-posts', (req, res) => {
                 c.comentario AS texto, 
                 c.comentario AS textoComentario, 
                 c.fecha, 
-                u.nombre AS autor 
+                u.nombre AS autor,
+                u.rol AS autor_rol
             FROM comentarios c
             JOIN usuarios u ON c.id_usuario = u.id
             ORDER BY c.fecha ASC`;
@@ -355,16 +337,13 @@ app.get('/get-posts', (req, res) => {
         db.query(sqlComments, (err, comments) => {
             if (err) return res.status(500).send(err);
 
-            // 3. Empaquetamos todo junto para el frontend
             const postsProcesados = posts.map(p => {
-                // Filtramos solo los comentarios que le pertenecen a esta publicación
                 const comentariosDelPost = comments.filter(c => c.id_publicacion === p.id);
-
                 return {
                     ...p,
                     texto: p.descripcion, 
                     imagenes: JSON.parse(p.fotos || '[]'),
-                    comentarios: comentariosDelPost // 🔥 Aquí inyectamos los comentarios
+                    comentarios: comentariosDelPost
                 };
             });
             
@@ -373,81 +352,53 @@ app.get('/get-posts', (req, res) => {
     });
 });
 
-// --- ESTADOS Y COMENTARIOS ---
 app.post('/cambiar-estado', (req, res) => {
     const { id, estado_venta } = req.body;
     const sql = 'UPDATE publicaciones SET estado_venta = ? WHERE id = ?';
     
     db.query(sql, [estado_venta, id], (err, result) => {
         if (err) return res.status(500).json({ message: "Error al actualizar estado" });
-        registrarEvento("Sistema", "N/A", "Cambio de Estado", `Post ${id} a ${estado_venta}`);
         res.status(200).json({ message: "Estado actualizado" });
     });
 });
 
 app.post('/comentar', (req, res) => {
-    // IMPORTANTE: Asegúrate de que el frontend envíe 'id_usuario' (el número)
     const { postId, id_usuario, textoComentario } = req.body;
-    
-    // Usamos los nombres exactos: id_publicacion, id_usuario, comentario
     const sql = 'INSERT INTO comentarios (id_publicacion, id_usuario, comentario) VALUES (?, ?, ?)';
     
     db.query(sql, [postId, id_usuario, textoComentario], (err, result) => {
-        if (err) {
-            console.error("❌ Error real en MySQL:", err);
-            return res.status(500).json({ message: "Error en el servidor" });
-        }
+        if (err) return res.status(500).json({ message: "Error en el servidor" });
         res.status(200).json({ message: "Añadido correctamente", id: result.insertId });
     });
 });
 
 app.post('/editar-comentario', (req, res) => {
     const { idComentario, nuevoTexto, id_usuario } = req.body;
-    
-    // 🕵️‍♂️ Chivato para la terminal
-    console.log("✏️ Intento de editar comentario:", req.body);
-
-    // Corregido: "id" en minúscula
     const sql = 'UPDATE comentarios SET comentario = ? WHERE id = ? AND id_usuario = ?';
     
     db.query(sql, [nuevoTexto, idComentario, id_usuario], (err, result) => {
-        if (err) {
-            console.error("❌ Error SQL al editar comentario:", err);
-            return res.status(500).json({ message: "Error interno en la base de datos" });
-        }
-        
-        if (result.affectedRows === 0) {
-            console.log("⚠️ Fallo al editar: ¿El comentario no existe o el ID de usuario no coincide?");
-            return res.status(403).json({ message: "No tienes permiso para editar esto o el comentario ya no existe" });
-        }
-        
-        console.log("✅ Comentario editado exitosamente.");
+        if (err) return res.status(500).json({ message: "Error interno en la base de datos" });
+        if (result.affectedRows === 0) return res.status(403).json({ message: "No autorizado" });
         res.status(200).json({ message: "Comentario editado" });
     });
 });
 
+// Actualizado para permitir que Moderadores y Admin borren cualquier comentario
 app.post('/borrar-comentario', (req, res) => {
-    const { idComentario, id_usuario } = req.body;
+    const { idComentario, id_usuario, role } = req.body; // El front puede mandar el rol actual
     
-    // 🕵️‍♂️ Chivato para la terminal: ver qué está mandando exactamente el frontend
-    console.log("🗑️ Intento de borrar comentario:", req.body);
+    let sql = 'DELETE FROM comentarios WHERE id = ? AND id_usuario = ?';
+    let params = [idComentario, id_usuario];
 
-    // Corregido: "id" en minúscula para hacer match exacto con la DB
-    const sql = 'DELETE FROM comentarios WHERE id = ? AND id_usuario = ?';
+    // Si es moderador o admin, se rompe el candado de propiedad privada
+    if (role === 'moderator' || role === 'moderador' || role === 'admin_server') {
+        sql = 'DELETE FROM comentarios WHERE id = ?';
+        params = [idComentario];
+    }
     
-    db.query(sql, [idComentario, id_usuario], (err, result) => {
-        if (err) {
-            console.error("❌ Error SQL al borrar comentario:", err);
-            return res.status(500).json({ message: "Error interno en la base de datos" });
-        }
-        
-        // Si no se afectó ninguna fila, significa que los IDs no hicieron match
-        if (result.affectedRows === 0) {
-            console.log("⚠️ Fallo al borrar: ¿El comentario no existe o el ID de usuario no coincide?");
-            return res.status(403).json({ message: "No tienes permiso para borrar esto o el comentario ya no existe" });
-        }
-        
-        console.log("✅ Comentario borrado exitosamente.");
+    db.query(sql, params, (err, result) => {
+        if (err) return res.status(500).json({ message: "Error en la base de datos" });
+        if (result.affectedRows === 0) return res.status(403).json({ message: "No se pudo eliminar el comentario" });
         res.status(200).json({ message: "Comentario eliminado" });
     });
 });
@@ -458,7 +409,6 @@ app.post('/editar-post', upload.array('imagenes', 5), (req, res) => {
         condicion, categoria, estado, municipio
     } = req.body;
 
-    // 1. Verificar que el usuario sea el dueño o admin
     const checkSql = `SELECT p.*, u.nombre AS autor FROM publicaciones p 
                       JOIN usuarios u ON p.id_usuario = u.id WHERE p.id = ?`;
     
@@ -470,7 +420,6 @@ app.post('/editar-post', upload.array('imagenes', 5), (req, res) => {
             return res.status(403).json({ message: "No autorizado" });
         }
 
-        // 2. Gestionar imágenes
         const fotosQueSeQuedan = Array.isArray(imagenesRestantes) ? imagenesRestantes : (imagenesRestantes ? [imagenesRestantes] : []);
         const viejasFotos = JSON.parse(post.fotos || '[]');
         eliminarArchivos(viejasFotos.filter(img => !fotosQueSeQuedan.includes(img)));
@@ -478,7 +427,6 @@ app.post('/editar-post', upload.array('imagenes', 5), (req, res) => {
         const nuevasFotos = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
         const todasLasFotos = JSON.stringify([...fotosQueSeQuedan, ...nuevasFotos]);
 
-        // 3. Actualizar en la DB
         const updateSql = `UPDATE publicaciones SET 
                            titulo = ?, descripcion = ?, precio = ?, estado_venta = ?, 
                            condicion = ?, categoria = ?, estado = ?, municipio = ?, fotos = ? 
@@ -496,13 +444,11 @@ app.post('/editar-post', upload.array('imagenes', 5), (req, res) => {
 app.post('/borrar-post', (req, res) => {
     const { postId } = req.body;
     
-    // Primero obtenemos las fotos para borrarlas del disco
     db.query('SELECT fotos FROM publicaciones WHERE id = ?', [postId], (err, results) => {
-        if (results.length > 0) {
+        if (results && results.length > 0) {
             const fotos = JSON.parse(results[0].fotos || '[]');
-            eliminarArchivos(fotos); // Borra los archivos de la carpeta uploads
+            eliminarArchivos(fotos);
 
-            // Luego borramos de la DB
             db.query('DELETE FROM publicaciones WHERE id = ?', [postId], (err) => {
                 if (err) return res.status(500).json({ message: "Error al eliminar de DB" });
                 res.status(200).json({ message: "Eliminado con éxito" });
@@ -517,11 +463,91 @@ app.post('/limpiar-servidor', (req, res) => {
     if (req.body.confirmacion === "CONFIRMAR") {
         const archivos = fs.readdirSync(uploadDir);
         for (const archivo of archivos) fs.unlinkSync(path.join(uploadDir, archivo));
-        publicaciones = [];
         return res.status(200).json({ message: "Limpio" });
     }
     res.status(400).json({ message: "Palabra incorrecta" });
 });
+
+// ==========================================
+// 🛡️ NUEVAS RUTAS EXCLUSIVAS DEL PANEL DE CONTROL (ADMIN)
+// ==========================================
+
+// 1. Obtener todas las solicitudes pendientes (Usuarios y Publicaciones)
+app.get('/api/admin/pendientes', (req, res) => {
+    const sqlUsers = "SELECT id, nombre, correo FROM usuarios WHERE estado_aprobacion = 'pendiente'";
+    
+    // 🔥 AQUÍ ESTÁ EL CAMBIO: agregamos p.fotos a la consulta
+    const sqlPosts = `
+        SELECT p.id, p.titulo, p.descripcion, p.precio, p.fotos, u.nombre AS autor 
+        FROM publicaciones p
+        JOIN usuarios u ON p.id_usuario = u.id
+        WHERE p.estado_aprobacion = 'pendiente'`;
+
+    db.query(sqlUsers, (err, users) => {
+        if (err) return res.status(500).json({ message: "Error cargando usuarios" });
+        
+        db.query(sqlPosts, (err, posts) => {
+            if (err) return res.status(500).json({ message: "Error cargando publicaciones" });
+            res.json({ usuarios: users, publicaciones: posts });
+        });
+    });
+});
+
+// 2. Resolver cuenta de usuario (Aprobar o Rechazar)
+app.post('/api/admin/resolver-usuario', (req, res) => {
+    const { idUsuario, estado } = req.body; // estado: 'aprobado' o 'rechazado'
+    const sql = "UPDATE usuarios SET estado_aprobacion = ? WHERE id = ?";
+    
+    db.query(sql, [estado, idUsuario], (err, result) => {
+        if (err) return res.status(500).json({ message: "Error al cambiar estado" });
+        registrarEvento("Admin", "admin_server", `Resolvió Usuario ID ${idUsuario}`, `Estado: ${estado}`);
+        res.json({ success: true, message: `Usuario ${estado} correctamente.` });
+    });
+});
+
+// 3. Resolver publicación manual (Aprobar o Rechazar)
+app.post('/api/admin/resolver-publicacion', (req, res) => {
+    const { idPost, estado } = req.body; // estado: 'aprobado' o 'rechazado'
+    
+    if (estado === 'rechazado') {
+        // Si la rechaza, se borra el registro físico y DB para no saturar
+        db.query('SELECT fotos FROM publicaciones WHERE id = ?', [idPost], (err, results) => {
+            if (results && results.length > 0) {
+                eliminarArchivos(JSON.parse(results[0].fotos || '[]'));
+            }
+            db.query('DELETE FROM publicaciones WHERE id = ?', [idPost], () => {
+                registrarEvento("Admin", "admin_server", `Rechazó y Eliminó Post ID ${idPost}`);
+                return res.json({ success: true, message: "Publicación rechazada y eliminada." });
+            });
+        });
+    } else {
+        // Si la aprueba, se vuelve visible al muro global
+        db.query("UPDATE publicaciones SET estado_aprobacion = 'aprobado' WHERE id = ?", [idPost], (err) => {
+            if (err) return res.status(500).json({ message: "Error al aprobar publicación" });
+            registrarEvento("Admin", "admin_server", `Aprobó Publicación ID ${idPost}`);
+            res.json({ success: true, message: "Publicación aprobada con éxito." });
+        });
+    }
+});
+
+// 4. Promover un usuario común a rol de Moderador
+app.post('/api/admin/promover-moderador', (req, res) => {
+    const { idUsuario } = req.body;
+    const sql = "UPDATE usuarios SET rol = 'moderator' WHERE id = ?";
+    
+    db.query(sql, [idUsuario], (err, result) => {
+        if (err) return res.status(500).json({ message: "Error al promover usuario" });
+        registrarEvento("Admin", "admin_server", `Ascendió a Moderador al ID: ${idUsuario}`);
+        res.json({ success: true, message: "Usuario ascendido a Moderador exitosamente." });
+    });
+});
+
+// 5. Monitorear usuarios activos en tiempo real (Conexiones WebSocket concurrentes)
+app.get('/api/admin/conectados', (req, res) => {
+    const totalConectados = io.engine.clientsCount; // Método directo de Socket.io
+    res.json({ conectados: totalConectados });
+});
+
 
 // ==========================================
 // 🚀 2. LÓGICA DEL CHAT (WEBSOCKETS)
@@ -543,29 +569,16 @@ io.on('connection', (socket) => {
 });
 
 // ==========================================
-// 📝 SECCIÓN DE BORRADORES (GUARDAR Y CONSULTAR)
+// 📝 SECCIÓN DE BORRADORES
 // ==========================================
 
-// 1. 💾 RUTA PARA GUARDAR UN BORRADOR (POST)
 app.post('/api/borradores', (req, res) => {
-    console.log("📥 Intentando guardar borrador. Datos recibidos del frontend:", req.body);
-    
     const { autor, titulo, precio, estado, municipio, categoria, condicion, descripcion } = req.body;
 
-    if (!autor) {
-        console.log("⚠️ Error: El frontend no envió el nombre del autor.");
-        return res.status(400).json({ message: "No se especificó el autor del borrador" });
-    }
+    if (!autor) return res.status(400).json({ message: "No se especificó el autor del borrador" });
 
     db.query('SELECT id FROM usuarios WHERE nombre = ?', [autor], (err, userResult) => {
-        if (err) {
-            console.error("❌ Error SQL al buscar usuario:", err);
-            return res.status(500).json({ message: "Error interno al buscar usuario" });
-        }
-        if (userResult.length === 0) {
-            console.log(`⚠️ Usuario "${autor}" no encontrado al intentar guardar.`);
-            return res.status(404).json({ message: "Usuario no encontrado" });
-        }
+        if (err || userResult.length === 0) return res.status(404).json({ message: "Usuario no encontrado" });
 
         const usuarioId = userResult[0].id;
         const precioFinal = parseFloat(precio) || 0.00;
@@ -576,50 +589,27 @@ app.post('/api/borradores', (req, res) => {
         const valores = [usuarioId, titulo, precioFinal, estado, municipio, categoria, condicion, descripcion];
 
         db.query(sql, valores, (err, result) => {
-            if (err) {
-                console.error("❌ Error en MySQL al guardar borrador:", err);
-                return res.status(500).json({ message: "Error al guardar en la base de datos" });
-            }
-
-            console.log("✅ ¡Borrador guardado con éxito en la BD! ID asignado:", result.insertId);
-            
-            // 🔥 ACTIVADO: Ya registra el evento en tu historial porque confirmamos que existe la función
+            if (err) return res.status(500).json({ message: "Error al guardar en la base de datos" });
             registrarEvento(autor, "user", "Guardó Borrador", `Título: ${titulo}`);
-            
             res.status(201).json({ message: "Borrador guardado exitosamente", id: result.insertId });
         });
     });
 });
 
-// 2. 🔍 RUTA PARA CONSULTAR LOS BORRADORES (GET) - ¡ESTA ERA LA QUE FALTABA!
 app.get('/api/borradores/usuario/:nombreUsuario', (req, res) => {
     const nombreUsuario = req.params.nombreUsuario;
-    console.log(`🔍 Frontend solicitando borradores para el usuario: "${nombreUsuario}"`);
-
     if (!nombreUsuario || nombreUsuario === "undefined" || nombreUsuario === "null") {
         return res.status(400).json({ message: "Nombre de usuario no válido" });
     }
 
     db.query('SELECT id FROM usuarios WHERE nombre = ?', [nombreUsuario], (err, userResult) => {
-        if (err) {
-            console.error("❌ Error SQL al buscar usuario:", err);
-            return res.status(500).json({ message: "Error interno del servidor" });
-        }
-        if (userResult.length === 0) {
-            console.log(`⚠️ El usuario "${nombreUsuario}" no existe en la tabla usuarios.`);
-            return res.status(404).json({ message: "Usuario no encontrado" });
-        }
+        if (err || userResult.length === 0) return res.status(404).json({ message: "Usuario no encontrado" });
         
         const idUsuario = userResult[0].id;
         const sql = `SELECT * FROM borradores WHERE usuario_id = ? ORDER BY id DESC`;
         
         db.query(sql, [idUsuario], (err, results) => {
-            if (err) {
-                console.error("❌ Error en MySQL al leer la tabla borradores:", err);
-                return res.status(500).json({ message: "Error al obtener los borradores" });
-            }
-
-            console.log(`✅ Se encontraron y enviaron ${results.length} borradores para ${nombreUsuario}`);
+            if (err) return res.status(500).json({ message: "Error al obtener los borradores" });
 
             const borradoresProcesados = results.map(b => ({
                 id: b.id,
@@ -633,43 +623,29 @@ app.get('/api/borradores/usuario/:nombreUsuario', (req, res) => {
                 categoria: b.categoria,
                 condicion: b.condicion
             }));
-
             res.json(borradoresProcesados);
         });
     });
 });
 
-// 3. 🗑️ RUTA PARA ELIMINAR UN BORRADOR (DELETE)
 app.delete('/api/borradores/:id', (req, res) => {
     const borradorId = req.params.id;
-    console.log(`🗑️ Frontend solicitando eliminar el borrador ID: ${borradorId}`);
-
-    if (!borradorId) {
-        return res.status(400).json({ message: "ID del borrador no proporcionado." });
-    }
-
     const sql = 'DELETE FROM borradores WHERE id = ?';
     
     db.query(sql, [borradorId], (err, result) => {
-        if (err) {
-            console.error("❌ Error en MySQL al eliminar el borrador:", err);
-            return res.status(500).json({ message: "Error interno del servidor al intentar eliminar." });
-        }
-
+        if (err) return res.status(500).json({ message: "Error al intentar eliminar." });
         if (result.affectedRows > 0) {
-            console.log(`✅ Borrador con ID ${borradorId} eliminado con éxito de la base de datos.`);
             res.status(200).json({ message: "Borrador eliminado correctamente." });
         } else {
-            console.log(`⚠️ No se pudo eliminar: El borrador con ID ${borradorId} no existe.`);
             res.status(404).json({ message: "El borrador no fue encontrado." });
         }
     });
 });
+
 // ==========================================
-// 🚀 3. INICIO DEL SERVIDOR (FUSIONADO)
+// 🚀 3. INICIO DEL SERVIDOR 
 // ==========================================
 const PORT = 3000;
-// ¡Cambiamos app por http para que escuche la web y el chat al mismo tiempo!
 http.listen(PORT, '0.0.0.0', () => {
     console.log(`
     🚀 SERVIDOR AGORA INICIADO

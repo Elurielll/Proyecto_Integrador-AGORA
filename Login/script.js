@@ -20,6 +20,9 @@ function mostrarAlerta(titulo, mensaje, tipo = 'exito', destinoUrl = null) {
     if (tipo === 'error') {
         icono.textContent = '❌';
         txtTitulo.style.color = '#ef4444'; // Rojo para error
+    } else if (tipo === 'advertencia') {
+        icono.textContent = '⏳';
+        txtTitulo.style.color = '#f59e0b'; // Naranja para advertencia/espera
     } else {
         icono.textContent = '✅';
         txtTitulo.style.color = '#10b981'; // Verde para éxito
@@ -91,11 +94,17 @@ loginForm.addEventListener('submit', async (e) => {
                 mostrarAlerta("¡Inicio de sesión exitoso!", "Serás redirigido al muro.", "exito", "publicaciones.html");
             }
         } else {
-            // Manejo de errores específicos del Login (Depende de tu backend)
+            // Manejo de errores específicos del Login 
             if (data.error === 'wrong_email') {
                 mostrarAlerta("Correo no encontrado", "El correo electrónico ingresado no pertenece a ninguna cuenta.", "error");
             } else if (data.error === 'wrong_password') {
                 mostrarAlerta("Contraseña incorrecta", "La contraseña que ingresaste es incorrecta. Inténtalo de nuevo.", "error");
+            } else if (data.error === 'pending_approval') {
+                // 🔥 NUEVA ALERTA PARA CUENTAS EN REVISIÓN
+                mostrarAlerta("Cuenta en Revisión", "Tu cuenta ha sido registrada pero aún no es aprobada por un administrador.<br><br>Por favor, intenta ingresar más tarde.", "advertencia");
+            } else if (data.error === 'account_rejected') {
+                // 🔥 NUEVA ALERTA PARA CUENTAS RECHAZADAS
+                mostrarAlerta("Acceso Denegado", "Lo sentimos, tu solicitud de cuenta ha sido rechazada por el equipo de administración.", "error");
             } else {
                 mostrarAlerta("Acceso Denegado", data.message || "Credenciales incorrectas.", "error");
             }
@@ -157,10 +166,15 @@ registerForm.addEventListener('submit', async (e) => {
             banner.classList.remove('toggle');
             registerForm.reset();
             
-            mostrarAlerta("¡Registro exitoso!", "Ahora puedes iniciar sesión con tus nuevos datos.", "exito");
+            // 🔥 MENSAJE ACTUALIZADO PARA NOTIFICAR AL USUARIO DE LA REVISIÓN
+            mostrarAlerta(
+                "¡Registro completado!", 
+                "Tu cuenta fue creada con éxito y ha sido <b>enviada a revisión</b>.<br><br>Un administrador deberá aprobarla antes de que puedas iniciar sesión.", 
+                "exito"
+            );
             
         } else {
-            // Manejo de errores específicos del Registro (Depende de tu backend)
+            // Manejo de errores específicos del Registro 
             if (data.error === 'user_exists') {
                 mostrarAlerta("Usuario no disponible", "Ese nombre de usuario ya está ocupado por otra persona.", "error");
             } else if (data.error === 'email_exists') {

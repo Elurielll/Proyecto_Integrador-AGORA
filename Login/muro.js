@@ -433,21 +433,36 @@ if (btnPublish) {
         const valores = {};
 
         campos.forEach(id => {
-            const input = document.getElementById(id);
-            if (input) {
-                valores[id] = input.value.trim();
-                const errorSpan = document.getElementById(`err-${id.replace('post', '').toLowerCase()}`);
-                if (errorSpan) errorSpan.style.display = 'none';
+    const input = document.getElementById(id);
+    if (input) {
+        valores[id] = input.value.trim();
+        const errorSpan = document.getElementById(`err-${id.replace('post', '').toLowerCase()}`);
+        if (errorSpan) errorSpan.style.display = 'none';
 
-                if (!valores[id]) {
-                    input.classList.add('input-error');
-                    if (errorSpan) errorSpan.style.display = 'block';
-                    esValido = false;
-                } else {
-                    input.classList.remove('input-error');
-                }
+        // Validar si el campo está vacío
+        if (!valores[id]) {
+            input.classList.add('input-error');
+            if (errorSpan) {
+                errorSpan.textContent = "Campo obligatorio"; // Texto por defecto
+                errorSpan.style.display = 'block';
             }
-        });
+            esValido = false;
+        } 
+        // 🔥 NUEVA REGLA PARA EL PRECIO: Si es postPrice y es 0 o menor
+        else if (id === 'postPrice' && (isNaN(parseFloat(valores[id])) || parseFloat(valores[id]) <= 0)) {
+            input.classList.add('input-error'); // Usamos tu clase para ponerlo rojo
+            if (errorSpan) {
+                errorSpan.textContent = "Ingresa un valor válido mayor a $0"; // Tu mensaje personalizado
+                errorSpan.style.display = 'block';
+            }
+            esValido = false;
+        } 
+        // Si todo está correcto
+        else {
+            input.classList.remove('input-error');
+        }
+    }
+});
 
         if (!esValido) {
             mostrarAlertaAnimada("Por favor, llena todos los campos marcados.");
@@ -486,7 +501,7 @@ if (btnPublish) {
 
                 cargarPosts();
                 
-                mostrarAlertaAnimada("¡Artículo publicado con éxito!", "exito");
+                mostrarAlertaAnimada("¡Artículo publicado con éxito! a espera de que sea aprobado en un plazo de 48hrs.", "exito");
 
                 const modal = document.getElementById('modalPublicacion'); 
                 if (modal) {
@@ -551,12 +566,17 @@ function renderizarPostsEnMuro() {
 
     postsAVisualizar.forEach(post => {
         const esDuenioPost = (post.autor === usuarioActual);
-        const esMod = (rol === 'moderador' || rol === 'admin_server');
+        const esMod = (rol === 'moderador' || rol === 'admin_server' || rol === 'moderator');
         const estadoActual = (post.estado_venta || 'disponible').toLowerCase();
         let claseEstado = estadoActual === 'vendido' ? 'vendido' : (estadoActual === 'en trato' ? 'en-trato' : 'disponible');
         let textoEstado = estadoActual === 'vendido' ? 'VENDIDO' : (estadoActual === 'en trato' ? 'En Trato' : 'Disponible');
 
-        // --- 1. MENÚ DE 3 PUNTOS (Corregido sin display inline para que funcione tu toggle) ---
+        // 🔥 AQUÍ GENERAMOS LA ETIQUETA MOD SI EL AUTOR DEL POST LO ES
+        const badgeModPost = (post.autor_rol === 'moderator' || post.autor_rol === 'moderador') 
+            ? `<span style="background:#ef4444; color:white; font-size:10px; padding:2px 6px; border-radius:4px; font-weight:bold; margin-left:5px; vertical-align:middle;">MOD</span>` 
+            : '';
+
+        // --- 1. MENÚ DE 3 PUNTOS ---
         let menuHtml = '';
         if (esDuenioPost || esMod) {
             menuHtml = `
@@ -571,7 +591,7 @@ function renderizarPostsEnMuro() {
                         ${estadoActual !== 'vendido' ? `<button onclick="cambiarEstado(${post.id}, 'vendido')" style="width: 100%; text-align: left; padding: 8px 12px; border: none; background: none; cursor: pointer; color: #334155; font-size: 0.9rem;">❌ Vendido</button>` : ''}
                         <hr style="margin: 4px 0; border: none; border-top: 1px solid #e2e8f0;">
                     ` : ''}
-                    <button onclick="borrarPost(${post.id}, '${post.autor}')" style="width: 100%; text-align: left; padding: 8px 12px; border: none; background: none; cursor: pointer; color: #ef4444; font-size: 0.9rem; font-radius: 4px;">🗑️ Borrar</button>
+                    <button onclick="borrarPost(${post.id}, '${post.autor}')" style="width: 100%; text-align: left; padding: 8px 12px; border: none; background: none; cursor: pointer; color: #ef4444; font-size: 0.9rem; border-radius: 4px;">🗑️ Borrar</button>
                 </div>
             </div>`;
         }
@@ -588,6 +608,13 @@ function renderizarPostsEnMuro() {
 
         // --- 3. DATOS Y COMENTARIOS ---
         const tiempoPost = obtenerTiempoTranscurrido(post.fecha_publicacion);
+        
+        // 🔥 AQUÍ AGREGAMOS LA CONSTANTE DEL PRECIO FORMATEADO
+        const precioFormateado = post.precio ? Number(post.precio).toLocaleString('en-US', { 
+            minimumFractionDigits: 0, 
+            maximumFractionDigits: 2 
+        }) : '';
+
         const etiquetaCategoria = post.categoria ? `<span class="tag-condicion" style="background: #f1f5f9; color: #475569;">🏷️ ${post.categoria}</span>` : '';
 
         let iconoCondicion = '';
@@ -599,8 +626,13 @@ function renderizarPostsEnMuro() {
         let htmlComentarios = '<div class="seccion-comentarios-preview">';
         const comentarios = post.comentarios || [];
         comentarios.slice(0, 1).forEach(c => {
+            // 🔥 AQUÍ TAMBIÉN AGREGAMOS EL BADGE EN EL PREVIEW DEL COMENTARIO
+            const badgeModComentarioPreview = (c.autor_rol === 'moderator' || c.autor_rol === 'moderador') 
+                ? `<span style="background:#ef4444; color:white; font-size:9px; padding:2px 4px; border-radius:3px; font-weight:bold; margin-left:3px;">MOD</span>` 
+                : '';
+
             htmlComentarios += `<div style="font-size: 0.85rem; margin-bottom: 6px; color: #475569; background: #f8fafc; padding: 6px 10px; border-radius: 6px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;">
-                <strong onclick="verPerfil('${c.autor}')" style="color: #0f172a; cursor: pointer;">${c.autor}</strong>: ${c.texto}
+                <strong onclick="verPerfil('${c.autor}')" style="color: #0f172a; cursor: pointer;">${c.autor} ${badgeModComentarioPreview}</strong>: ${c.texto}
             </div>`;
         });
 
@@ -623,14 +655,14 @@ function renderizarPostsEnMuro() {
                 
                 <div class="card-body">
                     <div class="card-header-info">
-                        ${post.precio ? `<span class="card-precio">$${post.precio}</span>` : ''}
+                        ${post.precio ? `<span class="card-precio">$${precioFormateado}</span>` : ''}
                         <span class="badge ${claseEstado} card-badge-estado">${textoEstado}</span>
                     </div>
                     
                     ${post.titulo ? `<h3 class="card-titulo" title="${post.titulo}">${post.titulo}</h3>` : ''}
                     
                     <div class="card-vendedor-info">
-                        <span class="vendedor-nombre" onclick="verPerfil('${post.autor}')">${post.autor}</span>
+                        <span class="vendedor-nombre" onclick="verPerfil('${post.autor}')">${post.autor} ${badgeModPost}</span>
                         <span class="vendedor-tiempo">${tiempoPost}</span>
                     </div>
 
@@ -724,6 +756,11 @@ function actualizarVistaModal(post) {
     sidebarDiv.style.padding = '0';
     sidebarDiv.style.margin = '0';
 
+    // 🔥 1. ETIQUETA MOD PARA EL AUTOR DEL POST (En la barra lateral)
+    const badgeModPost = (post.autor_rol === 'moderator' || post.autor_rol === 'moderador') 
+        ? `<span style="background:#ef4444; color:white; font-size:10px; padding:2px 6px; border-radius:4px; font-weight:bold; margin-left:5px; vertical-align:middle;">MOD</span>` 
+        : '';
+
     // --- 2. INFO PUBLICACIÓN ---
     const tiempoPost = obtenerTiempoTranscurrido(post.fecha_publicacion);
     let htmlInfoPost = `
@@ -731,7 +768,7 @@ function actualizarVistaModal(post) {
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                 <div style="width: 36px; height: 36px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; border: 1px solid #e2e8f0;">👤</div>
                 <div style="display: flex; flex-direction: column; line-height: 1.3;">
-                    <span style="font-weight: 700; color: #0f172a; font-size: 0.95rem; font-family: sans-serif;">${post.autor}</span>
+                    <span style="font-weight: 700; color: #0f172a; font-size: 0.95rem; font-family: sans-serif;">${post.autor} ${badgeModPost}</span>
                     <span style="color: #64748b; font-size: 0.8rem;">· ${tiempoPost}</span>
                 </div>
             </div>
@@ -746,42 +783,50 @@ function actualizarVistaModal(post) {
 
     // --- 3. COMENTARIOS (Diseño corregido) ---
     const contenedorInternoComentarios = document.createElement('div');
-    // Usamos display: block en lugar de flex para evitar choques con tu CSS
     contenedorInternoComentarios.style.cssText = "width: 100%; box-sizing: border-box; padding: 16px; display: block;";
     sidebarDiv.appendChild(contenedorInternoComentarios);
 
     const comentarios = post.comentarios || [];
+    
+    // Obtenemos el rol de quien está viendo la pantalla para darle permisos de moderador
+    const miRolActual = obtenerRol(); 
     
     if (comentarios.length === 0) {
         contenedorInternoComentarios.innerHTML = '<p style="color: #94a3b8; font-size: 0.9rem; margin: 0; font-family: sans-serif;">Sin comentarios aún. ¡Sé el primero!</p>';
     } else {
         comentarios.forEach((c, index) => {
             const esMio = c.autor === obtenerNombreUsuario();
+            const soyMod = (miRolActual === 'moderador' || miRolActual === 'moderator' || miRolActual === 'admin_server');
             const tiempoComentario = obtenerTiempoTranscurrido(c.fecha); 
             
+            // 🔥 ETIQUETA MOD PARA QUIEN ESCRIBIÓ EL COMENTARIO
+            const badgeModComentario = (c.autor_rol === 'moderator' || c.autor_rol === 'moderador') 
+                ? `<span style="background:#ef4444; color:white; font-size:9px; padding:2px 5px; border-radius:3px; font-weight:bold; margin-left:5px;">MOD</span>` 
+                : '';
+
             let htmlAcciones = '';
-            if (esMio) {
-                // Menú de 3 puntos flotando a la derecha con float: right
+            
+            // 🔥 SI ES MIO "O" SI SOY MODERADOR, MUESTRO EL MENÚ DE 3 PUNTOS
+            if (esMio || soyMod) {
                 htmlAcciones = `
                     <div style="position: relative; float: right;">
                         <button onclick="toggleMenuComentario(${index})" style="background: transparent; border: none; cursor: pointer; color: #64748b; font-size: 1.3rem; padding: 0 4px; font-weight: bold; outline: none;">⋮</button>
                         
                         <div id="menu-comentario-${index}" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 10; width: 110px; margin-top: 2px;">
-    <button onclick="editarComentario(${post.id}, ${c.id}, '${c.texto.replace(/'/g, "\\'")}')" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; cursor: pointer; color: #334155; font-size: 0.85rem; border-bottom: 1px solid #f1f5f9;">✏️ Editar</button>
-    
-    <button onclick="borrarComentario(${post.id}, ${c.id})" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; cursor: pointer; color: #ef4444; font-size: 0.85rem;">🗑️ Borrar</button>
-</div>
+                            ${esMio ? `<button onclick="editarComentario(${post.id}, ${c.id}, '${c.texto.replace(/'/g, "\\'")}')" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; cursor: pointer; color: #334155; font-size: 0.85rem; border-bottom: 1px solid #f1f5f9;">✏️ Editar</button>` : ''}
+                            <button onclick="borrarComentario(${post.id}, ${c.id})" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; cursor: pointer; color: #ef4444; font-size: 0.85rem;">🗑️ Borrar</button>
+                        </div>
                     </div>
                 `;
             }
 
-            // Burbuja del comentario
+            // Burbuja del comentario con la etiqueta inyectada
             contenedorInternoComentarios.innerHTML += `
                 <div style="margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; font-family: sans-serif; clear: both;">
                     
                     <div style="margin-bottom: 4px;">
                         ${htmlAcciones}
-                        <span style="font-weight: 700; color: #0f172a; font-size: 0.9rem; margin-right: 6px;">${c.autor}</span> 
+                        <span style="font-weight: 700; color: #0f172a; font-size: 0.9rem; margin-right: 6px;">${c.autor} ${badgeModComentario}</span> 
                         <span style="color: #94a3b8; font-size: 0.75rem;">· ${tiempoComentario}</span>
                     </div>
 
