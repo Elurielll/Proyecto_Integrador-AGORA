@@ -681,27 +681,119 @@ function renderizarPostsEnMuro() {
 }
 
 // ==========================================================================
-// 4. ACCIONES GLOBALES (Estados y Borrado)
+// 4. ACCIONES GLOBALES (Estados, Edición y Borrado)
 // ==========================================================================
+
+// ✅ 1. FUNCIÓN PARA CAMBIAR ESTADO (En Trato / Vendido)
 window.cambiarEstado = async (postId, nuevoEstado) => {
-    await fetch('/cambiar-estado', { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ id: postId, estado_venta: nuevoEstado }) 
-    });
-    cargarPosts(); 
+    try {
+        const respuesta = await fetch('/cambiar-estado', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ id: postId, estado_venta: nuevoEstado }) 
+        });
+        if(respuesta.ok) {
+            cargarPosts(); 
+        } else {
+            console.error("Error devuelto por el servidor.");
+        }
+    } catch(err) {
+        console.error("Error al hacer la petición:", err);
+    }
 };
 
+// ⚠️ 2. AQUÍ DEBEN IR TUS FUNCIONES ORIGINALES DE EDICIÓN ⚠️
+// (Asegúrate de tener aquí tus funciones prepararEdicion(postId), guardarEdicion() 
+// o cualquier otra que ya tuvieras para manejar tu modal de edición. ¡NO las borres!)
+
+
+
+// ==========================================
+// 🚨 LÓGICA DE BORRADO DE POST (Esto está perfecto, déjalo así)
+// ==========================================
+let postIdSeleccionadoParaBorrar = null;
+
 window.borrarPost = async (postId, autorPost) => {
-    AgoraModals.confirm("Borrar Publicación", "¿Seguro que deseas borrar esta publicación? Esta acción no se puede deshacer.", "Borrar Publicación", async () => {
+    const rolActual = obtenerRol();
+    const usuarioLogueado = localStorage.getItem("nombreUsuario"); 
+
+    // CASO 1: Moderador
+    if ((rolActual === 'moderador' || rolActual === 'moderator') && usuarioLogueado !== autorPost) {
+        postIdSeleccionadoParaBorrar = postId; 
+        document.getElementById('motivoReporte').value = '';
+        document.getElementById('charCount').innerText = '0/500 caracteres';
+        document.getElementById('charCount').style.color = '#7bed9f';
+        document.getElementById('modalReporteMod').classList.remove('hidden');
+    } 
+    // CASO 2: Usuario Normal
+    else {
+        AgoraModals.confirm("Borrar Publicación", "¿Seguro que deseas borrar esta publicación? Esta acción no se puede deshacer.", "Borrar Publicación", async () => {
+            await fetch('/borrar-post', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ postId: postId, role: rolActual, nombreUsuario: usuarioLogueado })
+            });
+            cargarPosts();
+        });
+    }
+};
+
+// ==========================================
+// 🛡️ FUNCIONES DE LOS MODALES DE MODERADOR
+// ==========================================
+window.cerrarModalReporte = () => {
+    document.getElementById('modalReporteMod').classList.add('hidden');
+    postIdSeleccionadoParaBorrar = null;
+};
+
+window.cerrarModalExito = () => {
+    document.getElementById('modalExitoMod').classList.add('hidden');
+    cargarPosts(); // Recarga el muro al cerrar el éxito
+};
+
+window.confirmarReporteMod = async () => {
+    const motivo = document.getElementById('motivoReporte').value.trim();
+    
+    if (motivo === "") { alert("Debes escribir un motivo obligatorio."); return; }
+    if (motivo.length > 500) { alert("El motivo es muy largo."); return; }
+
+    const rolActual = obtenerRol();
+    const usuarioLogueado = localStorage.getItem("nombreUsuario");
+
+    try {
         await fetch('/borrar-post', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ postId, role: obtenerRol() })
+            body: JSON.stringify({ 
+                postId: postIdSeleccionadoParaBorrar, role: rolActual,
+                nombreUsuario: usuarioLogueado, motivo: motivo 
+            })
         });
-        cargarPosts();
-    });
+        
+        // Ocultamos el reporte y MOSTRAMOS EL ÉXITO
+        document.getElementById('modalReporteMod').classList.add('hidden');
+        document.getElementById('modalExitoMod').classList.remove('hidden');
+
+    } catch (e) {
+        console.error("Error:", e);
+        alert("Ocurrió un error al intentar enviar el reporte.");
+    }
 };
+
+// ==========================================
+// MENÚS, CONTADORES Y PERFILES
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    const inputMotivo = document.getElementById('motivoReporte');
+    if (inputMotivo) {
+        inputMotivo.addEventListener('input', function() {
+            const cuenta = this.value.length;
+            const contadorText = document.getElementById('charCount');
+            contadorText.innerText = `${cuenta}/500 caracteres`;
+            contadorText.style.color = (cuenta > 480) ? '#ff4757' : '#7bed9f'; 
+        });
+    }
+});
 
 window.toggleMenu = (event, postId) => {
     event.stopPropagation();
@@ -710,14 +802,11 @@ window.toggleMenu = (event, postId) => {
 };
 
 document.addEventListener('click', () => document.querySelectorAll('.menu-dropdown').forEach(m => m.classList.remove('show')));
+
 window.verPerfil = (nombreUsuario) => {
-    if (esVisitante()) {
-        mostrarModalVisitante();
-        return; // Cortamos la ejecución para que no redireccione
-    }
+    if (esVisitante()) { mostrarModalVisitante(); return; }
     window.location.href = `/perfil.html?usuario=${encodeURIComponent(nombreUsuario)}`;
 };
-
 // ==========================================================================
 // 5. VISOR DE IMÁGENES Y COMENTARIOS (FB MODAL)
 // ==========================================================================

@@ -348,6 +348,38 @@
         </div>
     </div>
 
+    <!-- ========================================== -->
+<!-- 🛡️ MODALES EXCLUSIVOS PARA MODERADORES -->
+<!-- ========================================== -->
+<!-- 1. Modal para escribir el motivo -->
+<div id="modalReporteMod" class="agora-mod-overlay hidden">
+    <div class="agora-mod-content">
+        <div class="agora-mod-header">
+            <h3>🚨 Solicitar Eliminación de Post</h3>
+            <button class="agora-btn-close" onclick="cerrarModalReporte()">×</button>
+        </div>
+        <div class="agora-mod-body">
+            <p>Como moderador, detalla el motivo de la eliminación. Este reporte será enviado a la administración.</p>
+            <textarea id="motivoReporte" placeholder="Ej. Contenido inapropiado, spam, ofensa..." maxlength="500"></textarea>
+            <small id="charCount">0/500 caracteres</small>
+        </div>
+        <div class="agora-mod-footer">
+            <button class="agora-btn-cancelar" onclick="cerrarModalReporte()">Cancelar</button>
+            <button class="agora-btn-enviar" onclick="confirmarReporteMod()">Enviar Reporte</button>
+        </div>
+    </div>
+</div>
+
+<!-- 2. Modal de Éxito (Reemplaza al alert) -->
+<div id="modalExitoMod" class="agora-mod-overlay hidden">
+    <div class="agora-mod-content" style="text-align: center; padding: 30px 20px;">
+        <h2 style="color: #7bed9f; font-size: 3rem; margin: 0 0 10px 0;">✅</h2>
+        <h3 style="color: #fff; margin-bottom: 10px;">¡Reporte Enviado!</h3>
+        <p style="color: #ced6e0; margin-bottom: 25px;">La solicitud de eliminación ha sido enviada con éxito al panel de administración.</p>
+        <button class="agora-btn-enviar" onclick="cerrarModalExito()" style="background: #3742fa; width: 100%;">Entendido</button>
+    </div>
+</div>
+
      <script src="muro.js?v=3"></script>
 </body>
 </html>
