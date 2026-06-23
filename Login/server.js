@@ -1,47 +1,114 @@
 const express = require('express');
 const path = require('path');
-const multer = require('multer'); 
-const fs = require('fs'); 
-const app = express();
-
-// ==========================================
-// 🚀 1. NUEVAS HERRAMIENTAS PARA EL CHAT Y DB
-// ==========================================
+const multer = require('multer');
+const fs = require('fs');
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 const mysql = require('mysql2');
 
-// Cambiado a createPool para evitar desconexiones automáticas de MySQL
+const app = express();
+
+// ==============================
+// 🔧 MIDDLEWARE OBLIGATORIO
+// ==============================
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
+
+// ==============================
+// 🗄️ BASE DE DATOS (POOL SEGURO)
+// ==============================
 const db = mysql.createPool({
     host: 'localhost',
-    user: 'root',      
-    password: '',      
+    user: 'root',
+    password: '',
     database: 'agora_db',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
 });
 
-// Verificación inicial del Pool
+// test conexión (IMPORTANTE)
+db.getConnection((err, connection) => {
+    if (err) {
+        console.error("❌ Error conexión MySQL:", err);
+        return;
+    }
+    console.log("✅ MySQL conectado correctamente");
+    connection.release();
+});
+
+// ==============================
+// 📩 NODMAILER GMAIL
+// ==============================
+
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'eradillo4@ucol.mx', // TU correo real
+        pass: 'pfqioapcjnlekxvl' // App Password de 16 caracteres
+    }
+});
+// verificar conexión
+transporter.verify((error) => {
+    if (error) {
+        console.error("❌ Error Gmail:");
+        console.error(error);
+    } else {
+        console.log("✅ Gmail conectado correctamente");
+    }
+});
+
+// ==============================
+// 🔐 RESET PASSWORD TEMPORAL STORE
+// ==============================
+let passwordResets = [];
+
+// ==============================
+// 🔎 VERIFICAR CONEXIÓN MYSQL
+// ==============================
 db.getConnection((err, connection) => {
     if (err) {
         console.error('❌ Error conectando a la base de datos:', err);
         return;
     }
-    console.log('✅ ¡Conectado exitosamente a la base de datos MySQL de Ágora!');
-    connection.release(); // Libera la conexión de prueba
 
-    // 🔥 AUTO-FIX: Creamos las columnas necesarias si no existen
-    db.query("ALTER TABLE publicaciones ADD COLUMN motivo_borrado VARCHAR(500) DEFAULT NULL", () => {});
-    db.query("ALTER TABLE publicaciones ADD COLUMN mod_solicitante VARCHAR(100) DEFAULT NULL", () => {});
-    db.query("ALTER TABLE publicaciones MODIFY estado_aprobacion VARCHAR(50) DEFAULT 'pendiente'", () => {
-        console.log('🔧 ¡Estados de aprobación actualizados a texto libre!');
-    });
+    console.log('✅ ¡Conectado exitosamente a MySQL!');
+    connection.release();
+
+    // Auto-fix columnas
+    db.query(
+        "ALTER TABLE publicaciones ADD COLUMN motivo_borrado VARCHAR(500) DEFAULT NULL",
+        () => {}
+    );
+
+    db.query(
+        "ALTER TABLE publicaciones ADD COLUMN mod_solicitante VARCHAR(100) DEFAULT NULL",
+        () => {}
+    );
+
+    db.query(
+        "ALTER TABLE publicaciones MODIFY estado_aprobacion VARCHAR(50) DEFAULT 'pendiente'",
+        () => {
+            console.log('🔧 Estados actualizados');
+        }
+    );
 });
 
+// ==============================
+// 🌐 HTTP + SOCKET.IO
+// ==============================
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
 
+// ==============================
+// 📂 CREAR CARPETA UPLOADS
+// ==============================
 const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) { fs.mkdirSync(uploadDir); }
+
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => { cb(null, 'uploads/'); },
@@ -82,44 +149,191 @@ function registrarEvento(usuario, rol, accion, detalles = "") {
 // --- RUTAS DE USUARIO Y LOGIN ---
 app.post('/register', (req, res) => {
     const { fullname, email_reg, password_reg } = req.body;
+
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&._-])[A-Za-z\d@$!%*#?&._-]{8,12}$/;
 
-    if (!passwordRegex.test(password_reg)) return res.status(400).json({ message: "Contraseña débil." });
-
-    db.query('SELECT nombre, correo FROM usuarios WHERE nombre = ? OR correo = ?', [fullname, email_reg], (err, results) => {
-        if (err) return res.status(500).json({ message: "Error interno" });
-        if (results.length > 0) return res.status(400).json({ message: "El usuario o correo ya existe" });
-
-        db.query(`INSERT INTO usuarios (nombre, correo, contrasena, rol, estado_aprobacion) VALUES (?, ?, ?, 'user', 'pendiente')`, 
-        [fullname, email_reg, password_reg], (err, result) => {
-            if (err) return res.status(500).json({ message: "Error al registrar" });
-            registrarEvento(fullname, "user", "Solicitud de Registro");
-            res.status(200).json({ message: "Solicitud de registro enviada con éxito." });
-        });
-    });
-});
-
-app.post('/login', (req, res) => {
-    const { email, password } = req.body;
-    if (email === "admin@servidor.com" && password === "root123") {
-        registrarEvento("Admin", "admin_server", "Inicio de Sesión (Panel)");
-        return res.json({ role: 'admin_server', nombre: 'Administrador Principal', id: 0 });
+    // validar contraseña
+    if (!passwordRegex.test(password_reg)) {
+        return res.status(400).json({ message: "Contraseña débil." });
     }
 
-    db.query('SELECT * FROM usuarios WHERE correo = ?', [email], (err, results) => {
-        if (err) return res.status(500).json({ message: "Error en el servidor" });
-        if (results.length === 0) return res.status(401).json({ message: "Correo no registrado" });
+    // verificar si existe usuario
+    db.query(
+        'SELECT nombre, correo FROM usuarios WHERE nombre = ? OR correo = ?',
+        [fullname, email_reg],
+        (err, results) => {
 
-        const u = results[0]; 
-        if (u.contrasena !== password) return res.status(401).json({ message: "Contraseña incorrecta" });
-        if (u.estado_aprobacion === 'pendiente') return res.status(403).json({ message: "Cuenta en revisión." });
-        if (u.estado_aprobacion === 'rechazado') return res.status(403).json({ message: "Cuenta rechazada." });
-        
-        registrarEvento(u.nombre, u.rol, "Inicio de Sesión");
-        return res.json({ role: u.rol, nombre: u.nombre, id: u.id });
+            if (err) {
+                console.error("Error SQL register:", err);
+                return res.status(500).json({ message: "Error interno" });
+            }
+
+            if (results.length > 0) {
+                return res.status(400).json({ message: "El usuario o correo ya existe" });
+            }
+
+            // insertar usuario
+            db.query(
+                `INSERT INTO usuarios (nombre, correo, contrasena, rol, estado_aprobacion)
+                 VALUES (?, ?, ?, 'user', 'pendiente')`,
+                [fullname, email_reg, password_reg],
+                (err, result) => {
+
+                    if (err) {
+                        console.error("Error insert usuario:", err);
+                        return res.status(500).json({ message: "Error al registrar" });
+                    }
+
+                    registrarEvento(fullname, "user", "Solicitud de Registro");
+
+                    return res.status(200).json({
+                        message: "Solicitud de registro enviada con éxito."
+                    });
+                }
+            );
+        }
+    );
+});
+ // ======================
+// 🔐 RECUPERACIÓN DE CONTRASEÑA (CORREGIDO)
+// ======================
+
+app.post('/recover-password', (req,res)=>{
+
+    console.log("📩 Solicitud recibida:",req.body);
+
+    const {email}=req.body;
+
+    if(!email){
+
+        return res.status(400).json({
+            success:false,
+            message:"Correo vacío"
+        });
+
+    }
+
+    db.query(
+        'SELECT * FROM usuarios WHERE correo=?',
+        [email],
+        (err,results)=>{
+
+            if(err){
+
+                console.log("ERROR SQL:",err);
+
+                return res.status(500).json({
+                    success:false,
+                    message:"Error base datos"
+                });
+
+            }
+
+            if(results.length===0){
+
+                return res.status(404).json({
+                    success:false,
+                    message:"Ese correo no existe"
+                });
+
+            }
+
+            const token=
+            crypto.randomBytes(32)
+            .toString('hex');
+
+            passwordResets.push({
+                email,
+                token,
+                expires:Date.now()+900000
+            });
+
+            const link=
+            `http://localhost:3000/reset-password.html?token=${token}`;
+
+            console.log("LINK:",link);
+
+            transporter.sendMail({
+
+                from:'tucorreo@gmail.com',
+                to:email,
+                subject:'Recuperar contraseña',
+
+                html:`
+                <h2>Recuperar contraseña</h2>
+
+                <a href="${link}">
+                Restablecer contraseña
+                </a>
+                `
+
+            },(error)=>{
+
+                if(error){
+
+    console.log("❌ ERROR EMAIL COMPLETO:");
+    console.log(error);
+
+    return res.status(500).json({
+        success:false,
+        message:error.message
     });
+
+}
+
+                return res.json({
+                    success:true,
+                    message:"Correo enviado"
+                });
+
+            });
+
+        }
+    );
 });
 
+app.post('/reset-password', (req, res) => {
+    const { token, newPassword } = req.body;
+
+    const record = passwordResets.find(r => r.token === token);
+
+    if (!record) {
+        return res.status(400).json({
+            success: false,
+            message: "Token inválido"
+        });
+    }
+
+    if (Date.now() > record.expires) {
+        return res.status(400).json({
+            success: false,
+            message: "Token expirado"
+        });
+    }
+
+    db.query(
+        'UPDATE usuarios SET contrasena = ? WHERE correo = ?',
+        [newPassword, record.email],
+        (err) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({
+                    success: false,
+                    message: "Error al actualizar contraseña"
+                });
+            }
+
+            // limpiar token usado
+            const index = passwordResets.findIndex(r => r.token === token);
+            if (index !== -1) passwordResets.splice(index, 1);
+
+            return res.json({
+                success: true,
+                message: "Contraseña actualizada"
+            });
+        }
+    );
+});
 app.get('/api/perfil/:nombre', (req, res) => {
     db.query('SELECT nombre, correo, bio, estado, municipio, foto_perfil, rol FROM usuarios WHERE nombre = ?', [req.params.nombre], (err, results) => {
         if (err || results.length === 0) return res.status(404).json({ message: "No encontrado" });

@@ -31,11 +31,19 @@
     </div>
 </div>
                     
-                    <div class="buttons">
-                        <button type="submit">Iniciar Sesión</button>
-                    </div>
-                    
-                    <p class="account">¿No tienes una cuenta? <a href="#" id="sign-up">Regístrate</a></p>
+                   <div class="buttons">
+    <button type="submit">Iniciar Sesión</button>
+</div>
+
+<div style="text-align:center; margin-top:10px;">
+    <a href="javascript:void(0);" 
+       id="forgot-password"
+       style="color:#4a6a91; text-decoration:none; cursor:pointer;">
+        ¿Olvidaste tu contraseña?
+    </a>
+</div>
+
+<p class="account">¿No tienes una cuenta? <a href="#" id="sign-up">Regístrate</a></p>
 
                     <button type="button" id="btn-visitante" onclick="localStorage.clear(); window.location.href='/publicaciones.html';" style="background-color: #000080; color: white; margin-top: 15px; width: 100%; padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; font-size: 1rem;">
     Entrar como visitante
@@ -97,5 +105,33 @@
     </div>
 
     <script src="script.js"></script>
+    <!-- Modal recuperar contraseña -->
+<div id="modalRecuperar" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:9999;">
+
+    <div style="background:white; padding:25px; border-radius:10px; width:320px; text-align:center;">
+
+        <h3>Recuperar contraseña</h3>
+
+        <p style="font-size:14px; color:gray;">
+            Ingresa tu correo electrónico
+        </p>
+
+        <input type="email"
+               id="correoRecuperacion"
+               placeholder="correo@ejemplo.com"
+               style="width:90%; padding:10px; margin:15px 0;">
+
+        <button onclick="enviarRecuperacion()"
+                style="width:100%; padding:10px; background:#4a6a91; color:white; border:none; border-radius:5px;">
+            Enviar
+        </button>
+
+        <button onclick="cerrarRecuperacion()"
+                style="width:100%; padding:10px; margin-top:10px;">
+            Cancelar
+        </button>
+
+    </div>
+</div>
 </body>
 </html>

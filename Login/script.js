@@ -189,15 +189,84 @@ registerForm.addEventListener('submit', async (e) => {
     }
 });
 
-// --- FUNCIÓN DEL OJO (CONTRASEÑA) ---
 function togglePassword(inputId, button) {
     const passwordInput = document.getElementById(inputId);
-    
-    if (passwordInput && passwordInput.type === 'password') {
+    if (!passwordInput) return;
+
+    if (passwordInput.type === 'password') {
         passwordInput.type = 'text';
-        button.textContent = '🙈'; 
-    } else if (passwordInput) {
+        button.textContent = '🙈';
+    } else {
         passwordInput.type = 'password';
-        button.textContent = '👁️'; 
+        button.textContent = '👁️';
     }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const botonRecuperar = document.getElementById("forgot-password");
+    const modal = document.getElementById("modalRecuperar");
+
+    if (botonRecuperar && modal) {
+        botonRecuperar.addEventListener("click", (e) => {
+            e.preventDefault();
+            modal.style.display = "flex";
+        });
+    }
+});
+
+// cerrar modal (TE FALTABA ESTA FUNCIÓN)
+function cerrarRecuperacion() {
+    const modal = document.getElementById("modalRecuperar");
+    if (modal) {
+        modal.style.display = "none";
+    }
+}
+
+// enviar recuperación
+function enviarRecuperacion() {
+
+    const email = document
+        .getElementById("correoRecuperacion")
+        .value
+        .trim();
+
+    if (!email) {
+        alert("Ingresa un correo");
+        return;
+    }
+
+    fetch('/recover-password', {
+        method:'POST',
+        headers:{
+            'Content-Type':'application/json'
+        },
+        body:JSON.stringify({
+            email: email
+        })
+    })
+    .then(async response => {
+
+        const data = await response.json();
+
+        console.log("RESPUESTA:", data);
+
+        if(response.ok){
+
+            alert(data.message);
+
+            if(typeof cerrarRecuperacion === "function"){
+                cerrarRecuperacion();
+            }
+
+        }else{
+            alert(data.message);
+        }
+
+    })
+    .catch(error=>{
+
+        console.log("ERROR:",error);
+
+        alert("No se pudo conectar con el servidor");
+    });
 }
