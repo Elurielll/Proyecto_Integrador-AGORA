@@ -433,21 +433,36 @@ if (btnPublish) {
         const valores = {};
 
         campos.forEach(id => {
-            const input = document.getElementById(id);
-            if (input) {
-                valores[id] = input.value.trim();
-                const errorSpan = document.getElementById(`err-${id.replace('post', '').toLowerCase()}`);
-                if (errorSpan) errorSpan.style.display = 'none';
+    const input = document.getElementById(id);
+    if (input) {
+        valores[id] = input.value.trim();
+        const errorSpan = document.getElementById(`err-${id.replace('post', '').toLowerCase()}`);
+        if (errorSpan) errorSpan.style.display = 'none';
 
-                if (!valores[id]) {
-                    input.classList.add('input-error');
-                    if (errorSpan) errorSpan.style.display = 'block';
-                    esValido = false;
-                } else {
-                    input.classList.remove('input-error');
-                }
+        // Validar si el campo está vacío
+        if (!valores[id]) {
+            input.classList.add('input-error');
+            if (errorSpan) {
+                errorSpan.textContent = "Campo obligatorio"; // Texto por defecto
+                errorSpan.style.display = 'block';
             }
-        });
+            esValido = false;
+        } 
+        // 🔥 NUEVA REGLA PARA EL PRECIO: Si es postPrice y es 0 o menor
+        else if (id === 'postPrice' && (isNaN(parseFloat(valores[id])) || parseFloat(valores[id]) <= 0)) {
+            input.classList.add('input-error'); // Usamos tu clase para ponerlo rojo
+            if (errorSpan) {
+                errorSpan.textContent = "Ingresa un valor válido mayor a $0"; // Tu mensaje personalizado
+                errorSpan.style.display = 'block';
+            }
+            esValido = false;
+        } 
+        // Si todo está correcto
+        else {
+            input.classList.remove('input-error');
+        }
+    }
+});
 
         if (!esValido) {
             mostrarAlertaAnimada("Por favor, llena todos los campos marcados.");
@@ -486,7 +501,7 @@ if (btnPublish) {
 
                 cargarPosts();
                 
-                mostrarAlertaAnimada("¡Artículo publicado con éxito!", "exito");
+                mostrarAlertaAnimada("¡Artículo publicado con éxito! a espera de que sea aprobado en un plazo de 48hrs.", "exito");
 
                 const modal = document.getElementById('modalPublicacion'); 
                 if (modal) {
@@ -551,130 +566,234 @@ function renderizarPostsEnMuro() {
 
     postsAVisualizar.forEach(post => {
         const esDuenioPost = (post.autor === usuarioActual);
-        const esMod = (rol === 'moderador' || rol === 'admin_server');
+        const esMod = (rol === 'moderador' || rol === 'admin_server' || rol === 'moderator');
         const estadoActual = (post.estado_venta || 'disponible').toLowerCase();
         let claseEstado = estadoActual === 'vendido' ? 'vendido' : (estadoActual === 'en trato' ? 'en-trato' : 'disponible');
         let textoEstado = estadoActual === 'vendido' ? 'VENDIDO' : (estadoActual === 'en trato' ? 'En Trato' : 'Disponible');
 
+        // 🔥 AQUÍ GENERAMOS LA ETIQUETA MOD SI EL AUTOR DEL POST LO ES
+        const badgeModPost = (post.autor_rol === 'moderator' || post.autor_rol === 'moderador') 
+            ? `<span style="background:#ef4444; color:white; font-size:10px; padding:2px 6px; border-radius:4px; font-weight:bold; margin-left:5px; vertical-align:middle;">MOD</span>` 
+            : '';
+
+        // --- 1. MENÚ DE 3 PUNTOS ---
         let menuHtml = '';
         if (esDuenioPost || esMod) {
             menuHtml = `
-            <div class="menu-container" style="position: absolute; right: 20px; top: 20px; z-index: 10;">
-                <button class="btn-menu-trigger" onclick="toggleMenu(event, ${post.id})" style="font-size: 1.5rem; background: transparent; border: none; cursor: pointer; color: #64748b;">⋮</button>
-                <div class="menu-dropdown" id="menu-${post.id}" style="position: absolute; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; min-width: 160px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            <div class="menu-container" style="position: absolute; right: 12px; top: 12px; z-index: 50;">
+                <button class="btn-menu-trigger" onclick="toggleMenu(event, ${post.id})" style="font-size: 1.4rem; background: rgba(255, 255, 255, 0.9); border-radius: 50%; width: 34px; height: 34px; border: 1px solid #e2e8f0; cursor: pointer; color: #475569; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.1); font-weight: bold;">⋮</button>
+                <div class="menu-dropdown" id="menu-${post.id}" style="position: absolute; right: 0; top: 38px; background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px; min-width: 150px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
                     ${esDuenioPost ? `
-                        <button onclick="prepararEdicion(${post.id})" style="width: 100%; text-align: left; padding: 8px; border: none; background: none; cursor: pointer; color: #334155; border-radius: 4px;">✏️ Editar</button>
+                        <button onclick="prepararEdicion(${post.id})" style="width: 100%; text-align: left; padding: 8px 12px; border: none; background: none; cursor: pointer; color: #334155; font-size: 0.9rem; border-radius: 4px;">✏️ Editar</button>
                         <hr style="margin: 4px 0; border: none; border-top: 1px solid #e2e8f0;">
-                        ${estadoActual !== 'disponible' ? `<button onclick="cambiarEstado(${post.id}, 'disponible')" style="width: 100%; text-align: left; padding: 8px; border: none; background: none; cursor: pointer; color: #334155;">✅ Disponible</button>` : ''}
-                        ${estadoActual !== 'en trato' ? `<button onclick="cambiarEstado(${post.id}, 'en trato')" style="width: 100%; text-align: left; padding: 8px; border: none; background: none; cursor: pointer; color: #334155;">🤝 En trato</button>` : ''}
-                        ${estadoActual !== 'vendido' ? `<button onclick="cambiarEstado(${post.id}, 'vendido')" style="width: 100%; text-align: left; padding: 8px; border: none; background: none; cursor: pointer; color: #334155;">❌ Vendido</button>` : ''}
+                        ${estadoActual !== 'disponible' ? `<button onclick="cambiarEstado(${post.id}, 'disponible')" style="width: 100%; text-align: left; padding: 8px 12px; border: none; background: none; cursor: pointer; color: #334155; font-size: 0.9rem;">✅ Disponible</button>` : ''}
+                        ${estadoActual !== 'en trato' ? `<button onclick="cambiarEstado(${post.id}, 'en trato')" style="width: 100%; text-align: left; padding: 8px 12px; border: none; background: none; cursor: pointer; color: #334155; font-size: 0.9rem;">🤝 En trato</button>` : ''}
+                        ${estadoActual !== 'vendido' ? `<button onclick="cambiarEstado(${post.id}, 'vendido')" style="width: 100%; text-align: left; padding: 8px 12px; border: none; background: none; cursor: pointer; color: #334155; font-size: 0.9rem;">❌ Vendido</button>` : ''}
                         <hr style="margin: 4px 0; border: none; border-top: 1px solid #e2e8f0;">
                     ` : ''}
-                    <button onclick="borrarPost(${post.id}, '${post.autor}')" style="width: 100%; text-align: left; padding: 8px; border: none; background: none; cursor: pointer; color: #ef4444; border-radius: 4px;">🗑️ Borrar</button>
+                    <button onclick="borrarPost(${post.id}, '${post.autor}')" style="width: 100%; text-align: left; padding: 8px 12px; border: none; background: none; cursor: pointer; color: #ef4444; font-size: 0.9rem; border-radius: 4px;">🗑️ Borrar</button>
                 </div>
             </div>`;
         }
 
-        let htmlImagenes = '';
-        if (post.imagenes?.length === 1) {
-            htmlImagenes = `<img src="${post.imagenes[0]}" class="img-unica" onclick="abrirVisor(${post.id}, 0)" style="max-height: 400px; object-fit: cover; width: 100%; border-radius: 12px; cursor: pointer; margin-top: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">`;
-        } else if (post.imagenes?.length > 1) {
-            htmlImagenes = `<div class="post-images-grid" id="grid-${post.id}" style="margin-top: 15px; border-radius: 12px; overflow: hidden;">`;
-            post.imagenes.slice(0, 4).forEach((url, i) => {
-                if (i === 3 && post.imagenes.length > 4) {
-                    htmlImagenes += `
-                        <div style="position: relative; cursor: pointer;" onclick="abrirVisor(${post.id}, ${i})">
-                            <img src="${url}" style="width: 100%; height: 100%; object-fit: cover;">
-                            <div class="more-photos-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); color:white; display:flex; align-items:center; justify-content:center; font-size: 1.5rem; font-weight: bold;">+${post.imagenes.length - 4}</div>
-                        </div>`;
-                } else {
-                    htmlImagenes += `<img src="${url}" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;" onclick="abrirVisor(${post.id}, ${i})">`;
-                }
-            });
-            htmlImagenes += `</div>`;
+        // --- 2. IMAGEN PRINCIPAL ---
+        let urlImagenPrincipal = 'https://via.placeholder.com/300x200?text=Sin+Imagen';
+        let indicadorGaleria = '';
+        if (post.imagenes && post.imagenes.length > 0) {
+            urlImagenPrincipal = post.imagenes[0];
+            if (post.imagenes.length > 1) {
+                indicadorGaleria = `<div class="indicador-galeria">1/${post.imagenes.length}</div>`;
+            }
         }
 
-        let htmlComentarios = '<div class="seccion-comentarios-preview" style="margin-top: 15px;">';
-        const comentarios = post.comentarios || [];
-        
-        comentarios.slice(0, 2).forEach(c => {
-            htmlComentarios += `<div style="font-size: 0.95rem; margin-bottom: 8px; color: #334155; background: #f8fafc; padding: 8px 12px; border-radius: 8px;">
-                <strong onclick="verPerfil('${c.autor}')" style="color: #0f172a; cursor: pointer;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${c.autor}</strong>: ${c.texto}
-            </div>`;
-        });
-
-        if (comentarios.length > 2) {
-            htmlComentarios += `<button class="btn-ver-mas-comentarios" onclick="abrirVisor(${post.id}, 0)" style="background: none; border: none; color: #3b82f6; cursor: pointer; padding: 0; font-size: 0.95rem; margin-top: 5px; font-weight: 500;">Ver los ${comentarios.length} comentarios</button>`;
-        } else {
-            htmlComentarios += `<button class="btn-ver-mas-comentarios" onclick="abrirVisor(${post.id}, 0)" style="background: none; border: none; color: #64748b; cursor: pointer; padding: 0; font-size: 0.95rem; margin-top: 5px; font-weight: 500;">💬 Agregar un comentario...</button>`;
-        }
-        htmlComentarios += '</div>';
-
+        // --- 3. DATOS Y COMENTARIOS ---
         const tiempoPost = obtenerTiempoTranscurrido(post.fecha_publicacion);
-        const etiquetaCategoria = post.categoria ? `<span style="background: #f1f5f9; color: #475569; padding: 4px 12px; border-radius: 16px; font-size: 0.8rem; font-weight: 600; border: 1px solid #e2e8f0;">🏷️ ${post.categoria}</span>` : '';
+        
+        // 🔥 AQUÍ AGREGAMOS LA CONSTANTE DEL PRECIO FORMATEADO
+        const precioFormateado = post.precio ? Number(post.precio).toLocaleString('en-US', { 
+            minimumFractionDigits: 0, 
+            maximumFractionDigits: 2 
+        }) : '';
+
+        const etiquetaCategoria = post.categoria ? `<span class="tag-condicion" style="background: #f1f5f9; color: #475569;">🏷️ ${post.categoria}</span>` : '';
 
         let iconoCondicion = '';
         if(post.condicion === 'Nuevo') iconoCondicion = '✨ ';
         if(post.condicion === 'Buen estado') iconoCondicion = '👍 ';
         if(post.condicion === 'Usado') iconoCondicion = '📦 ';
-        const etiquetaCondicion = post.condicion ? `<span style="background: #fef9c3; color: #a16207; padding: 4px 12px; border-radius: 16px; font-size: 0.8rem; font-weight: 600; border: 1px solid #fef08a;">${iconoCondicion}${post.condicion.replace('✨ ', '').replace('👍 ', '').replace('📦 ', '')}</span>` : '';
+        const etiquetaCondicion = post.condicion ? `<span class="tag-condicion">${iconoCondicion}${post.condicion.replace('✨ ', '').replace('👍 ', '').replace('📦 ', '')}</span>` : '';
 
+        let htmlComentarios = '<div class="seccion-comentarios-preview">';
+        const comentarios = post.comentarios || [];
+        comentarios.slice(0, 1).forEach(c => {
+            // 🔥 AQUÍ TAMBIÉN AGREGAMOS EL BADGE EN EL PREVIEW DEL COMENTARIO
+            const badgeModComentarioPreview = (c.autor_rol === 'moderator' || c.autor_rol === 'moderador') 
+                ? `<span style="background:#ef4444; color:white; font-size:9px; padding:2px 4px; border-radius:3px; font-weight:bold; margin-left:3px;">MOD</span>` 
+                : '';
+
+            htmlComentarios += `<div style="font-size: 0.85rem; margin-bottom: 6px; color: #475569; background: #f8fafc; padding: 6px 10px; border-radius: 6px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;">
+                <strong onclick="verPerfil('${c.autor}')" style="color: #0f172a; cursor: pointer;">${c.autor} ${badgeModComentarioPreview}</strong>: ${c.texto}
+            </div>`;
+        });
+
+        if (comentarios.length > 1) {
+            htmlComentarios += `<button onclick="abrirVisor(${post.id}, 0)" style="background: none; border: none; color: #3b82f6; cursor: pointer; padding: 0; font-size: 0.85rem; font-weight: 500;">Ver los ${comentarios.length} comentarios</button>`;
+        } else {
+            htmlComentarios += `<button onclick="abrirVisor(${post.id}, 0)" style="background: none; border: none; color: #64748b; cursor: pointer; padding: 0; font-size: 0.85rem; font-weight: 500;">💬 Comentar...</button>`;
+        }
+        htmlComentarios += '</div>';
+
+        // --- 4. INSERTAR TARJETA ---
         postsDiv.innerHTML += `
-            <div class="post ${estadoActual === 'vendido' ? 'post-vendido' : ''}" style="position: relative; padding: 24px; border: 1px solid #f1f5f9; background: white; margin-bottom: 24px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.04);">
+            <div class="card-producto ${estadoActual === 'vendido' ? 'card-vendido' : ''}" id="post-${post.id}">
                 ${menuHtml}
                 
-                <div style="display: flex; align-items: center; margin-bottom: 16px;">
-                    <div style="width: 42px; height: 42px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; margin-right: 12px;">👤</div>
-                    <div>
-                        <div onclick="verPerfil('${post.autor}')" style="font-weight: 700; color: #1e293b; font-size: 1.05rem; cursor: pointer;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${post.autor}</div>
-                        <div style="color: #94a3b8; font-size: 0.85rem;">${tiempoPost}</div>
+                <div class="card-img-container" onclick="abrirVisor(${post.id}, 0)">
+                    <img src="${urlImagenPrincipal}" alt="${post.titulo || 'Producto'}" class="card-img-top">
+                    ${indicadorGaleria}
+                </div>
+                
+                <div class="card-body">
+                    <div class="card-header-info">
+                        ${post.precio ? `<span class="card-precio">$${precioFormateado}</span>` : ''}
+                        <span class="badge ${claseEstado} card-badge-estado">${textoEstado}</span>
                     </div>
+                    
+                    ${post.titulo ? `<h3 class="card-titulo" title="${post.titulo}">${post.titulo}</h3>` : ''}
+                    
+                    <div class="card-vendedor-info">
+                        <span class="vendedor-nombre" onclick="verPerfil('${post.autor}')">${post.autor} ${badgeModPost}</span>
+                        <span class="vendedor-tiempo">${tiempoPost}</span>
+                    </div>
+
+                    <div class="card-etiquetas">
+                        ${etiquetaCategoria}
+                        ${etiquetaCondicion}
+                    </div>
+                    
+                    ${post.municipio && post.estado ? `<div class="card-ubicacion">📍 ${post.municipio}</div>` : ''}
+                    
+                    <hr class="card-divisor">
+                    ${htmlComentarios}
                 </div>
-
-                ${post.precio ? `<div style="font-size: 1.6rem; color: #10b981; font-weight: 900; margin-bottom: 4px;">$${post.precio}</div>` : ''}
-                ${post.titulo ? `<h3 style="margin: 0 0 12px 0; color: #0f172a; font-size: 1.25rem; font-weight: 700;">${post.titulo}</h3>` : ''}
-
-                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
-                    <span class="badge ${claseEstado}" style="padding: 4px 12px; font-size: 0.8rem;">${textoEstado}</span>
-                    ${etiquetaCategoria}
-                    ${etiquetaCondicion}
-                </div>
-
-                ${post.municipio && post.estado ? `<div style="color: #64748b; font-size: 0.9rem; margin-bottom: 16px; display: flex; align-items: center;">📍 ${post.municipio}, ${post.estado}</div>` : ''}
-                
-                <p style="margin: 0 0 16px 0; color: #475569; line-height: 1.6; font-size: 1rem;">${post.texto}</p>
-                
-                ${htmlImagenes}
-
-                <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 20px 0;">
-
-                ${htmlComentarios}
             </div>`;
     });
 }
 
 // ==========================================================================
-// 4. ACCIONES GLOBALES (Estados y Borrado)
+// 4. ACCIONES GLOBALES (Estados, Edición y Borrado)
 // ==========================================================================
+
+// ✅ 1. FUNCIÓN PARA CAMBIAR ESTADO (En Trato / Vendido)
 window.cambiarEstado = async (postId, nuevoEstado) => {
-    await fetch('/cambiar-estado', { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ id: postId, estado_venta: nuevoEstado }) 
-    });
-    cargarPosts(); 
+    try {
+        const respuesta = await fetch('/cambiar-estado', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ id: postId, estado_venta: nuevoEstado }) 
+        });
+        if(respuesta.ok) {
+            cargarPosts(); 
+        } else {
+            console.error("Error devuelto por el servidor.");
+        }
+    } catch(err) {
+        console.error("Error al hacer la petición:", err);
+    }
 };
 
+// ⚠️ 2. AQUÍ DEBEN IR TUS FUNCIONES ORIGINALES DE EDICIÓN ⚠️
+// (Asegúrate de tener aquí tus funciones prepararEdicion(postId), guardarEdicion() 
+// o cualquier otra que ya tuvieras para manejar tu modal de edición. ¡NO las borres!)
+
+
+
+// ==========================================
+// 🚨 LÓGICA DE BORRADO DE POST (Esto está perfecto, déjalo así)
+// ==========================================
+let postIdSeleccionadoParaBorrar = null;
+
 window.borrarPost = async (postId, autorPost) => {
-    AgoraModals.confirm("Borrar Publicación", "¿Seguro que deseas borrar esta publicación? Esta acción no se puede deshacer.", "Borrar Publicación", async () => {
+    const rolActual = obtenerRol();
+    const usuarioLogueado = localStorage.getItem("nombreUsuario"); 
+
+    // CASO 1: Moderador
+    if ((rolActual === 'moderador' || rolActual === 'moderator') && usuarioLogueado !== autorPost) {
+        postIdSeleccionadoParaBorrar = postId; 
+        document.getElementById('motivoReporte').value = '';
+        document.getElementById('charCount').innerText = '0/500 caracteres';
+        document.getElementById('charCount').style.color = '#7bed9f';
+        document.getElementById('modalReporteMod').classList.remove('hidden');
+    } 
+    // CASO 2: Usuario Normal
+    else {
+        AgoraModals.confirm("Borrar Publicación", "¿Seguro que deseas borrar esta publicación? Esta acción no se puede deshacer.", "Borrar Publicación", async () => {
+            await fetch('/borrar-post', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ postId: postId, role: rolActual, nombreUsuario: usuarioLogueado })
+            });
+            cargarPosts();
+        });
+    }
+};
+
+// ==========================================
+// 🛡️ FUNCIONES DE LOS MODALES DE MODERADOR
+// ==========================================
+window.cerrarModalReporte = () => {
+    document.getElementById('modalReporteMod').classList.add('hidden');
+    postIdSeleccionadoParaBorrar = null;
+};
+
+window.cerrarModalExito = () => {
+    document.getElementById('modalExitoMod').classList.add('hidden');
+    cargarPosts(); // Recarga el muro al cerrar el éxito
+};
+
+window.confirmarReporteMod = async () => {
+    const motivo = document.getElementById('motivoReporte').value.trim();
+    
+    if (motivo === "") { alert("Debes escribir un motivo obligatorio."); return; }
+    if (motivo.length > 500) { alert("El motivo es muy largo."); return; }
+
+    const rolActual = obtenerRol();
+    const usuarioLogueado = localStorage.getItem("nombreUsuario");
+
+    try {
         await fetch('/borrar-post', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ postId, role: obtenerRol() })
+            body: JSON.stringify({ 
+                postId: postIdSeleccionadoParaBorrar, role: rolActual,
+                nombreUsuario: usuarioLogueado, motivo: motivo 
+            })
         });
-        cargarPosts();
-    });
+        
+        // Ocultamos el reporte y MOSTRAMOS EL ÉXITO
+        document.getElementById('modalReporteMod').classList.add('hidden');
+        document.getElementById('modalExitoMod').classList.remove('hidden');
+
+    } catch (e) {
+        console.error("Error:", e);
+        alert("Ocurrió un error al intentar enviar el reporte.");
+    }
 };
+
+// ==========================================
+// MENÚS, CONTADORES Y PERFILES
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    const inputMotivo = document.getElementById('motivoReporte');
+    if (inputMotivo) {
+        inputMotivo.addEventListener('input', function() {
+            const cuenta = this.value.length;
+            const contadorText = document.getElementById('charCount');
+            contadorText.innerText = `${cuenta}/500 caracteres`;
+            contadorText.style.color = (cuenta > 480) ? '#ff4757' : '#7bed9f'; 
+        });
+    }
+});
 
 window.toggleMenu = (event, postId) => {
     event.stopPropagation();
@@ -683,14 +802,11 @@ window.toggleMenu = (event, postId) => {
 };
 
 document.addEventListener('click', () => document.querySelectorAll('.menu-dropdown').forEach(m => m.classList.remove('show')));
+
 window.verPerfil = (nombreUsuario) => {
-    if (esVisitante()) {
-        mostrarModalVisitante();
-        return; // Cortamos la ejecución para que no redireccione
-    }
+    if (esVisitante()) { mostrarModalVisitante(); return; }
     window.location.href = `/perfil.html?usuario=${encodeURIComponent(nombreUsuario)}`;
 };
-
 // ==========================================================================
 // 5. VISOR DE IMÁGENES Y COMENTARIOS (FB MODAL)
 // ==========================================================================
@@ -729,6 +845,11 @@ function actualizarVistaModal(post) {
     sidebarDiv.style.padding = '0';
     sidebarDiv.style.margin = '0';
 
+    // 🔥 1. ETIQUETA MOD PARA EL AUTOR DEL POST (En la barra lateral)
+    const badgeModPost = (post.autor_rol === 'moderator' || post.autor_rol === 'moderador') 
+        ? `<span style="background:#ef4444; color:white; font-size:10px; padding:2px 6px; border-radius:4px; font-weight:bold; margin-left:5px; vertical-align:middle;">MOD</span>` 
+        : '';
+
     // --- 2. INFO PUBLICACIÓN ---
     const tiempoPost = obtenerTiempoTranscurrido(post.fecha_publicacion);
     let htmlInfoPost = `
@@ -736,7 +857,7 @@ function actualizarVistaModal(post) {
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                 <div style="width: 36px; height: 36px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; border: 1px solid #e2e8f0;">👤</div>
                 <div style="display: flex; flex-direction: column; line-height: 1.3;">
-                    <span style="font-weight: 700; color: #0f172a; font-size: 0.95rem; font-family: sans-serif;">${post.autor}</span>
+                    <span style="font-weight: 700; color: #0f172a; font-size: 0.95rem; font-family: sans-serif;">${post.autor} ${badgeModPost}</span>
                     <span style="color: #64748b; font-size: 0.8rem;">· ${tiempoPost}</span>
                 </div>
             </div>
@@ -751,42 +872,50 @@ function actualizarVistaModal(post) {
 
     // --- 3. COMENTARIOS (Diseño corregido) ---
     const contenedorInternoComentarios = document.createElement('div');
-    // Usamos display: block en lugar de flex para evitar choques con tu CSS
     contenedorInternoComentarios.style.cssText = "width: 100%; box-sizing: border-box; padding: 16px; display: block;";
     sidebarDiv.appendChild(contenedorInternoComentarios);
 
     const comentarios = post.comentarios || [];
+    
+    // Obtenemos el rol de quien está viendo la pantalla para darle permisos de moderador
+    const miRolActual = obtenerRol(); 
     
     if (comentarios.length === 0) {
         contenedorInternoComentarios.innerHTML = '<p style="color: #94a3b8; font-size: 0.9rem; margin: 0; font-family: sans-serif;">Sin comentarios aún. ¡Sé el primero!</p>';
     } else {
         comentarios.forEach((c, index) => {
             const esMio = c.autor === obtenerNombreUsuario();
+            const soyMod = (miRolActual === 'moderador' || miRolActual === 'moderator' || miRolActual === 'admin_server');
             const tiempoComentario = obtenerTiempoTranscurrido(c.fecha); 
             
+            // 🔥 ETIQUETA MOD PARA QUIEN ESCRIBIÓ EL COMENTARIO
+            const badgeModComentario = (c.autor_rol === 'moderator' || c.autor_rol === 'moderador') 
+                ? `<span style="background:#ef4444; color:white; font-size:9px; padding:2px 5px; border-radius:3px; font-weight:bold; margin-left:5px;">MOD</span>` 
+                : '';
+
             let htmlAcciones = '';
-            if (esMio) {
-                // Menú de 3 puntos flotando a la derecha con float: right
+            
+            // 🔥 SI ES MIO "O" SI SOY MODERADOR, MUESTRO EL MENÚ DE 3 PUNTOS
+            if (esMio || soyMod) {
                 htmlAcciones = `
                     <div style="position: relative; float: right;">
                         <button onclick="toggleMenuComentario(${index})" style="background: transparent; border: none; cursor: pointer; color: #64748b; font-size: 1.3rem; padding: 0 4px; font-weight: bold; outline: none;">⋮</button>
                         
                         <div id="menu-comentario-${index}" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 10; width: 110px; margin-top: 2px;">
-    <button onclick="editarComentario(${post.id}, ${c.id}, '${c.texto.replace(/'/g, "\\'")}')" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; cursor: pointer; color: #334155; font-size: 0.85rem; border-bottom: 1px solid #f1f5f9;">✏️ Editar</button>
-    
-    <button onclick="borrarComentario(${post.id}, ${c.id})" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; cursor: pointer; color: #ef4444; font-size: 0.85rem;">🗑️ Borrar</button>
-</div>
+                            ${esMio ? `<button onclick="editarComentario(${post.id}, ${c.id}, '${c.texto.replace(/'/g, "\\'")}')" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; cursor: pointer; color: #334155; font-size: 0.85rem; border-bottom: 1px solid #f1f5f9;">✏️ Editar</button>` : ''}
+                            <button onclick="borrarComentario(${post.id}, ${c.id})" style="width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; cursor: pointer; color: #ef4444; font-size: 0.85rem;">🗑️ Borrar</button>
+                        </div>
                     </div>
                 `;
             }
 
-            // Burbuja del comentario
+            // Burbuja del comentario con la etiqueta inyectada
             contenedorInternoComentarios.innerHTML += `
                 <div style="margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; font-family: sans-serif; clear: both;">
                     
                     <div style="margin-bottom: 4px;">
                         ${htmlAcciones}
-                        <span style="font-weight: 700; color: #0f172a; font-size: 0.9rem; margin-right: 6px;">${c.autor}</span> 
+                        <span style="font-weight: 700; color: #0f172a; font-size: 0.9rem; margin-right: 6px;">${c.autor} ${badgeModComentario}</span> 
                         <span style="color: #94a3b8; font-size: 0.75rem;">· ${tiempoComentario}</span>
                     </div>
 

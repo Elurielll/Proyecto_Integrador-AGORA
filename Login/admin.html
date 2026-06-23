@@ -34,8 +34,8 @@
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
         }
 
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; }
-        .tab-btn { background: none; border: none; color: #94a3b8; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 8px; transition: 0.3s; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; overflow-x: auto;}
+        .tab-btn { background: none; border: none; color: #94a3b8; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 8px; transition: 0.3s; white-space: nowrap; }
         .tab-btn.active { background: var(--accent); color: var(--bg); }
         .tab-btn:hover:not(.active) { background: #334155; color: white; }
 
@@ -56,7 +56,38 @@
         .log-row.peligro .log-desc { color: #f87171; }
         .log-row.peligro .log-badge { background: #ef4444; color: white; }
 
+        /* Estilos para Aprobaciones */
+        .card-aprobacion { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 10px; }
+        .btn-aprobar { background: #10b981; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-rechazar { background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* 🔥 ESTILOS DE LA NUEVA MODAL GLOBAL 🔥 */
+        .modal-custom-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); z-index: 9999;
+            align-items: center; justify-content: center;
+        }
+        .modal-custom-box {
+            background: #1e293b; padding: 24px; border-radius: 16px; border: 1px solid #334155;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; max-width: 400px; width: 90%;
+            animation: modalPopIn 0.2s ease-out;
+        }
+        @keyframes modalPopIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .modal-custom-icon { font-size: 3.5rem; margin-bottom: 12px; }
+        .modal-custom-box h3 { margin: 0 0 8px 0; color: #f8fafc; font-size: 1.3rem; }
+        .modal-custom-box p { color: #94a3b8; margin-bottom: 20px; font-size: 0.95rem; line-height: 1.5; }
+        .modal-custom-input {
+            width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; 
+            color: white; border-radius: 8px; margin-bottom: 20px; font-size: 1rem; box-sizing: border-box; text-align: center;
+        }
+        .modal-custom-input:focus { outline: 2px solid #38bdf8; }
+        .modal-custom-actions { display: flex; gap: 12px; justify-content: center; }
+        .btn-modal-cancel { background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; width: 100%; }
+        .btn-modal-cancel:hover { background: #475569; }
+        .btn-modal-accept { background: #38bdf8; color: #0f172a; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; width: 100%; }
+        .btn-modal-accept:hover { background: #0ea5e9; }
     </style>
 </head>
 <body>
@@ -74,6 +105,7 @@
             <button class="tab-btn" onclick="openTab(event, 'tab-comentarios')">Comentarios</button>
             <button class="tab-btn" onclick="openTab(event, 'tab-registros')">Nuevos Usuarios</button>
             <button class="tab-btn" onclick="openTab(event, 'tab-logins')">Inicios Sesión</button>
+            <button class="tab-btn" onclick="openTab(event, 'tab-aprobaciones')" style="color: #fcd34d;">⚠️ Por Aprobar</button>
         </div>
 
         <div id="tab-posts" class="tab-content active">
@@ -96,51 +128,421 @@
             <div id="log-logins"></div>
         </div>
 
+        <div id="tab-aprobaciones" class="tab-content">
+            <h3>Cuentas Pendientes de Aprobación</h3>
+            <div id="lista-aprobaciones">Cargando cuentas pendientes...</div>
+            
+            <hr style="border: 1px solid #334155; margin: 25px 0;">
+            
+            <h3>Publicaciones en Revisión</h3>
+            <div id="lista-publicaciones-pendientes">Cargando publicaciones...</div>
+
+            <hr style="border: 1px solid #334155; margin: 25px 0;">
+            
+            <h3 style="color: #ef4444;">🚨 Solicitudes de Eliminación (Moderadores)</h3>
+            <div id="lista-borrados-pendientes">Cargando solicitudes...</div>
+        </div>
+
+        <div id="modal-preview" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; align-items:center; justify-content:center;">
+            <div style="background:var(--card); padding:25px; border-radius:12px; width:90%; max-width:600px; border: 1px solid #334155; box-shadow: 0 10px 25px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto;">
+                <h2 id="preview-titulo" style="color:var(--accent); margin-top:0;"></h2>
+                <p style="color:#94a3b8; font-size: 14px;">Autor: <strong id="preview-autor" style="color:white;"></strong></p>
+                
+                <div style="text-align: center; margin: 15px 0; background: #0f172a; border-radius: 8px; padding: 10px;">
+                    <img id="preview-imagen" src="" alt="Imagen de la publicación" style="max-width: 100%; max-height: 250px; border-radius: 4px; display: none; margin: 0 auto;">
+                    <p id="preview-no-img" style="color: #64748b; font-style: italic; display: none; margin: 0;">Sin imagen adjunta</p>
+                </div>
+
+                <h2 style="color:#10b981; margin: 10px 0;">$<span id="preview-precio"></span></h2>
+                
+                <div style="background:#0f172a; padding:15px; border-radius:8px; margin:15px 0; color: #cbd5e1;" id="preview-desc"></div>
+                
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+                    <button onclick="cerrarPreview()" style="background:#475569; color:white; border:none; padding:10px 15px; border-radius:8px; cursor:pointer; font-weight:bold;">Cerrar Vista</button>
+                    <button id="btn-preview-rechazar" class="btn-rechazar" style="padding:10px 15px; border-radius:8px; border: none; cursor: pointer; color: white; font-weight: bold;">❌ Rechazar</button>
+                    <button id="btn-preview-aprobar" class="btn-aprobar" style="padding:10px 15px; border-radius:8px; border: none; cursor: pointer; color: white; font-weight: bold;">✅ Aprobar</button>
+                </div>
+            </div>
+        </div>
+
         <div style="margin-top: 20px; display: flex; gap: 10px; align-items: center;">
             <button id="btn-vaciar" onclick="vaciarMuroSeguro()" style="background:#ef4444; color:white; border:none; padding:15px 25px; border-radius:8px; cursor:pointer; font-weight:bold; flex: 2;">🚨 VACIAR PÁGINA</button>
             <a href="index.html" onclick="cerrarSesion()" style="background:#475569; color:white; text-decoration:none; padding:15px; border-radius:8px; text-align:center; flex: 1; font-weight: bold;">Cerrar Sesión</a>
         </div>
     </div>
 
+    <div id="modalGlobalCustom" class="modal-custom-overlay">
+        <div class="modal-custom-box">
+            <div class="modal-custom-icon" id="mc-icon">❓</div>
+            <h3 id="mc-title">Título</h3>
+            <p id="mc-message">Mensaje</p>
+            <input type="text" id="mc-input" class="modal-custom-input" style="display: none;" autocomplete="off" placeholder="Escribe aquí...">
+            <div class="modal-custom-actions">
+                <button id="mc-btn-cancel" class="btn-modal-cancel">Cancelar (Esc)</button>
+                <button id="mc-btn-accept" class="btn-modal-accept">Aceptar (Enter)</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // ==========================================
+        // 🚀 SISTEMA DE MODAL GLOBAL REUTILIZABLE
+        // ==========================================
+        let modalGlobalConfig = { tipo: 'alert', callback: null };
+
+        function mostrarModal(tipo, titulo, mensaje, icono, callback = null) {
+            document.getElementById('mc-title').innerText = titulo;
+            document.getElementById('mc-message').innerText = mensaje;
+            document.getElementById('mc-icon').innerText = icono;
+            
+            const inputField = document.getElementById('mc-input');
+            const btnCancel = document.getElementById('mc-btn-cancel');
+            const btnAccept = document.getElementById('mc-btn-accept');
+            
+            modalGlobalConfig = { tipo, callback };
+            inputField.value = '';
+
+            if (tipo === 'alert') {
+                inputField.style.display = 'none';
+                btnCancel.style.display = 'none';
+                btnAccept.style.width = '100%';
+            } else if (tipo === 'confirm') {
+                inputField.style.display = 'none';
+                btnCancel.style.display = 'block';
+                btnAccept.style.width = '50%';
+                btnCancel.style.width = '50%';
+            } else if (tipo === 'prompt') {
+                inputField.style.display = 'block';
+                btnCancel.style.display = 'block';
+                btnAccept.style.width = '50%';
+                btnCancel.style.width = '50%';
+                setTimeout(() => inputField.focus(), 100);
+            }
+
+            document.getElementById('modalGlobalCustom').style.display = 'flex';
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalGlobalCustom').style.display = 'none';
+        }
+
+        document.getElementById('mc-btn-cancel').onclick = () => {
+            if (modalGlobalConfig.tipo === 'prompt' && modalGlobalConfig.callback) modalGlobalConfig.callback(null);
+            else if (modalGlobalConfig.tipo === 'confirm' && modalGlobalConfig.callback) modalGlobalConfig.callback(false);
+            cerrarModal();
+        };
+
+        document.getElementById('mc-btn-accept').onclick = ejecutarAceptarModal;
+
+        function ejecutarAceptarModal() {
+            if (modalGlobalConfig.tipo === 'prompt' && modalGlobalConfig.callback) {
+                modalGlobalConfig.callback(document.getElementById('mc-input').value);
+            } else if (modalGlobalConfig.tipo === 'confirm' && modalGlobalConfig.callback) {
+                modalGlobalConfig.callback(true);
+            } else if (modalGlobalConfig.tipo === 'alert' && modalGlobalConfig.callback) {
+                modalGlobalConfig.callback(true);
+            }
+            cerrarModal();
+        }
+
+        document.addEventListener('keydown', function(e) {
+            const modal = document.getElementById('modalGlobalCustom');
+            if (modal && modal.style.display === 'flex') {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    ejecutarAceptarModal();
+                } else if (e.key === 'Escape') {
+                    if (modalGlobalConfig.tipo === 'alert') cerrarModal();
+                    else document.getElementById('mc-btn-cancel').click();
+                }
+            }
+        });
+
+        // ==========================================
+        // LÓGICA DE PESTAÑAS Y CERRAR SESIÓN
+        // ==========================================
         function openTab(evt, tabName) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(tabName).classList.add('active');
             evt.currentTarget.classList.add('active');
+            
+            if (tabName === 'tab-aprobaciones') {
+                cargarCuentasPendientes();
+            }
         }
 
         function cerrarSesion() {
             localStorage.clear();
         }
 
-        async function vaciarMuroSeguro() {
-            if (!confirm("⚠️ ¿Estás seguro de BORRAR todas las publicaciones? Esta acción no se puede deshacer.")) return;
-            
-            const confirmacion = prompt("Ingresa la palabra CONFIRMAR para proceder:");
+        // ==========================================
+        // CARGA DE CUENTAS Y PUBLICACIONES PENDIENTES
+        // ==========================================
+        let arrayPublicacionesPendientes = [];
+        let arrayBorradosPendientes = [];
 
-            if (confirmacion === "CONFIRMAR") {
-                try {
-                    const res = await fetch('/limpiar-servidor', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ confirmacion: "CONFIRMAR" })
-                    });
-
-                    if (res.ok) {
-                        alert("✅ Sistema limpiado exitosamente.");
-                        cargarData();
-                    } else {
-                        alert("❌ Error al procesar la limpieza.");
-                    }
-                } catch (e) {
-                    alert("❌ Error de conexión al intentar vaciar el servidor.");
+        async function cargarCuentasPendientes() {
+            try {
+                const res = await fetch('/api/admin/pendientes');
+                const data = await res.json();
+                
+                // 1. RENDERIZAR USUARIOS
+                const pendientes = data.usuarios || []; 
+                const contenedor = document.getElementById('lista-aprobaciones');
+                if (pendientes.length === 0) {
+                    contenedor.innerHTML = "<p style='color:#64748b; padding:10px;'>No hay cuentas pendientes. 🎉</p>";
+                } else {
+                    contenedor.innerHTML = pendientes.map(user => `
+                        <div class="card-aprobacion">
+                            <div>
+                                <strong style="color: var(--accent); font-size: 1.1rem;">${user.nombre}</strong>
+                                <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">Correo: ${user.correo}</div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn-aprobar" onclick="gestionarCuenta(${user.id}, 'aprobado')">✅ Aprobar</button>
+                                <button class="btn-rechazar" onclick="gestionarCuenta(${user.id}, 'rechazado')">❌ Rechazar</button>
+                            </div>
+                        </div>
+                    `).join('');
                 }
-            } else if (confirmacion !== null) {
-                alert("Palabra incorrecta. Operación cancelada.");
+
+                // 2. RENDERIZAR PUBLICACIONES
+                arrayPublicacionesPendientes = data.publicaciones || [];
+                const contenedorPosts = document.getElementById('lista-publicaciones-pendientes');
+                
+                if (arrayPublicacionesPendientes.length === 0) {
+                    contenedorPosts.innerHTML = "<p style='color:#64748b; padding:10px;'>No hay publicaciones en revisión. 🎉</p>";
+                } else {
+                    contenedorPosts.innerHTML = arrayPublicacionesPendientes.map(post => `
+                        <div class="card-aprobacion">
+                            <div>
+                                <strong style="color: #fcd34d; font-size: 1.1rem;">${post.titulo || 'Sin título'}</strong>
+                                <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">Por: ${post.autor} | Precio: $${post.precio}</div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button style="background:#3b82f6; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer; font-weight:bold;" 
+                                    onclick="abrirPreview(${post.id})">👁️ Ver Post</button>
+                                <button class="btn-aprobar" onclick="gestionarPublicacion(${post.id}, 'aprobado')">✅</button>
+                                <button class="btn-rechazar" onclick="gestionarPublicacion(${post.id}, 'rechazado')">❌</button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                // 🔥 3. RENDERIZAR SOLICITUDES DE BORRADO 🔥
+                arrayBorradosPendientes = data.solicitudesBorrado || [];
+                const contenedorBorrados = document.getElementById('lista-borrados-pendientes');
+                
+                if (arrayBorradosPendientes.length === 0) {
+                    contenedorBorrados.innerHTML = "<p style='color:#64748b; padding:10px;'>No hay solicitudes de eliminación. 🎉</p>";
+                } else {
+                    contenedorBorrados.innerHTML = arrayBorradosPendientes.map(solicitud => `
+                        <div class="card-aprobacion" style="border-color: #ef4444;">
+                            <div style="flex: 1;">
+                                <strong style="color: #ef4444; font-size: 1.1rem;">Post ID: ${solicitud.id} - ${solicitud.titulo || 'Sin título'}</strong>
+                                <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">Mod: <strong style="color: #fcd34d;">${solicitud.moderador || solicitud.mod_solicitante || 'Desconocido'}</strong></div>
+                                <div style="font-size: 0.95rem; color: #cbd5e1; margin-top: 8px; background: rgba(239, 68, 68, 0.1); padding: 8px; border-radius: 6px;">
+                                    " ${solicitud.motivo || solicitud.motivo_borrado || 'Sin motivo especificado'} "
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-direction: column; margin-left: 15px;">
+                                <button style="background:#3b82f6; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="abrirPreviewBorrado(${solicitud.id})">👁️ Ver Post</button>
+                                <button class="btn-aprobar" style="background:#ef4444;" onclick="gestionarBorrado(${solicitud.id}, 'aprobar')">🗑️ Aprobar Borrado</button>
+                                <button class="btn-rechazar" style="background:#475569;" onclick="gestionarBorrado(${solicitud.id}, 'rechazar')">↩️ Restaurar</button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+            } catch (e) {
+                console.error("Error:", e);
+                document.getElementById('lista-aprobaciones').innerHTML = "<p style='color:#ef4444;'>Error de conexión.</p>";
             }
         }
 
+        // ==========================================
+        // PREVIEW DE PUBLICACIÓN (NUEVAS Y BORRADAS)
+        // ==========================================
+        function configurarModalPreview(post) {
+            document.getElementById('preview-titulo').innerText = post.titulo || 'Borrador sin título';
+            document.getElementById('preview-autor').innerText = post.autor || 'Desconocido';
+            document.getElementById('preview-precio').innerText = post.precio || '0.00';
+            document.getElementById('preview-desc').innerText = post.descripcion || 'El usuario no agregó descripción.';
+            
+            const imgElement = document.getElementById('preview-imagen');
+            const noImgElement = document.getElementById('preview-no-img');
+            
+            let primeraFoto = null;
+            if (post.fotos && post.fotos !== '[]') {
+                try {
+                    const fotosArray = JSON.parse(post.fotos); 
+                    if (fotosArray.length > 0) { primeraFoto = fotosArray[0]; }
+                } catch(e) {}
+            }
+            
+            if (primeraFoto) {
+                imgElement.src = primeraFoto; 
+                imgElement.style.display = 'block';
+                noImgElement.style.display = 'none';
+            } else {
+                imgElement.src = '';
+                imgElement.style.display = 'none';
+                noImgElement.style.display = 'block';
+            }
+            document.getElementById('modal-preview').style.display = 'flex';
+        }
+
+        // 👁️ Ojo para Publicaciones Nuevas
+        function abrirPreview(idPost) {
+            const post = arrayPublicacionesPendientes.find(p => p.id === idPost);
+            if (!post) return;
+            
+            configurarModalPreview(post);
+            
+            const btnAprobar = document.getElementById('btn-preview-aprobar');
+            const btnRechazar = document.getElementById('btn-preview-rechazar');
+            
+            btnAprobar.innerText = "✅ Aprobar";
+            btnAprobar.style.background = "#10b981";
+            btnAprobar.onclick = () => { cerrarPreview(); gestionarPublicacion(idPost, 'aprobado'); };
+            
+            btnRechazar.innerText = "❌ Rechazar";
+            btnRechazar.style.background = "#ef4444";
+            btnRechazar.onclick = () => { cerrarPreview(); gestionarPublicacion(idPost, 'rechazado'); };
+        }
+
+        // 👁️ Ojo para Publicaciones Borradas
+        function abrirPreviewBorrado(idPost) {
+            const post = arrayBorradosPendientes.find(p => p.id === idPost);
+            if (!post) return;
+            
+            configurarModalPreview(post);
+            
+            const btnAprobar = document.getElementById('btn-preview-aprobar');
+            const btnRechazar = document.getElementById('btn-preview-rechazar');
+            
+            btnAprobar.innerText = "🗑️ Aprobar Borrado";
+            btnAprobar.style.background = "#ef4444";
+            btnAprobar.onclick = () => { cerrarPreview(); gestionarBorrado(idPost, 'aprobar'); };
+            
+            btnRechazar.innerText = "↩️ Restaurar";
+            btnRechazar.style.background = "#475569";
+            btnRechazar.onclick = () => { cerrarPreview(); gestionarBorrado(idPost, 'rechazar'); };
+        }
+
+        function cerrarPreview() {
+            document.getElementById('modal-preview').style.display = 'none';
+        }
+
+        // ==========================================
+        // ACCIONES DEL ADMINISTRADOR
+        // ==========================================
+        function gestionarPublicacion(idPost, decision) {
+            mostrarModal('confirm', 'Confirmar Acción', `¿Estás seguro de marcar como ${decision.toUpperCase()} esta publicación?`, '👁️‍🗨️', async (confirmado) => {
+                if (!confirmado) return;
+                try {
+                    const res = await fetch('/api/admin/resolver-publicacion', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ idPost: idPost, estado: decision })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        mostrarModal('alert', 'Listo', data.message, '✅');
+                        cargarCuentasPendientes();
+                    } else {
+                        mostrarModal('alert', 'Error', data.message, '❌');
+                    }
+                } catch (e) {
+                    mostrarModal('alert', 'Error', 'Error de conexión con el servidor.', '🔌');
+                }
+            });
+        }
+
+        function gestionarCuenta(id_del_usuario, decision) {
+            mostrarModal('confirm', 'Aprobar/Rechazar Usuario', `¿Estás seguro de marcar como ${decision.toUpperCase()} a este usuario?`, '👤', async (confirmado) => {
+                if (!confirmado) return;
+                try {
+                    const res = await fetch('/api/admin/resolver-usuario', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ idUsuario: id_del_usuario, estado: decision })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        mostrarModal('alert', 'Operación Exitosa', data.message, '✅');
+                        cargarCuentasPendientes();
+                    } else {
+                        mostrarModal('alert', 'Error', data.message, '❌');
+                    }
+                } catch (e) {
+                    mostrarModal('alert', 'Error', 'Error de conexión con el servidor.', '🔌');
+                }
+            });
+        }
+
+        // 🔥 NUEVA FUNCIÓN: GESTIONAR BORRADOS CORREGIDA 🔥
+        function gestionarBorrado(idPost, accion) {
+            const esAprobar = accion === 'aprobar';
+            const mensaje = esAprobar 
+                ? "¿Estás seguro de APROBAR la eliminación? El post se borrará definitivamente."
+                : "¿Estás seguro de RECHAZAR la eliminación? El post volverá a estar visible en el muro.";
+
+            mostrarModal('confirm', 'Resolver Solicitud', mensaje, '⚖️', async (confirmado) => {
+                if (!confirmado) return;
+
+                try {
+                    const res = await fetch('/api/admin/resolver-borrado', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ idPost: idPost, resolucion: accion }) 
+                    });
+                    const data = await res.json();
+                    
+                    if (res.ok) {
+                        mostrarModal('alert', 'Listo', data.message, '✅');
+                        cargarCuentasPendientes(); 
+                    } else {
+                        mostrarModal('alert', 'Error', data.message, '❌');
+                    }
+                } catch (e) {
+                    mostrarModal('alert', 'Error', 'Error de conexión con el servidor.', '🔌');
+                }
+            });
+        }
+
+        function vaciarMuroSeguro() {
+            mostrarModal('confirm', '¡PELIGRO!', '¿Estás seguro de BORRAR todas las publicaciones? Esta acción no se puede deshacer.', '🚨', (confirmado) => {
+                if (!confirmado) return;
+                
+                mostrarModal('prompt', 'Verificación de Seguridad', 'Ingresa la palabra CONFIRMAR para proceder:', '🔐', async (input) => {
+                    if (input === "CONFIRMAR") {
+                        try {
+                            const res = await fetch('/limpiar-servidor', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ confirmacion: "CONFIRMAR" })
+                            });
+                            if (res.ok) {
+                                mostrarModal('alert', 'Completado', 'Sistema limpiado exitosamente.', '✅');
+                                cargarData();
+                            } else {
+                                mostrarModal('alert', 'Error', 'Error al procesar la limpieza.', '❌');
+                            }
+                        } catch (e) {
+                            mostrarModal('alert', 'Error Crítico', 'Error de conexión al intentar vaciar el servidor.', '🔌');
+                        }
+                    } else if (input !== null) {
+                        mostrarModal('alert', 'Cancelado', 'Palabra incorrecta. Operación de borrado cancelada.', '🛑');
+                    }
+                });
+            });
+        }
+
+        // ==========================================
+        // CARGA DE LOGS Y ACTIVIDAD DEL PANEL
+        // ==========================================
         async function cargarData() {
             try {
                 const res = await fetch('/admin-full-stats');
@@ -150,18 +552,13 @@
                 const logs = data.eventos.slice().reverse();
 
                 renderLogs('log-posts', logs.filter(l => 
-                    l.accion.includes("Post") || 
-                    l.accion.includes("Estado") || 
-                    l.accion.includes("Edición") || 
-                    l.accion.includes("Publicación") || 
-                    l.accion === "VACIADO TOTAL"
+                    l.accion.includes("Post") || l.accion.includes("Estado") || 
+                    l.accion.includes("Edición") || l.accion.includes("Publicación") || l.accion === "VACIADO TOTAL"
                 ));
                 renderLogs('log-comentarios', logs.filter(l => l.accion.includes("Comentario")));
                 renderLogs('log-registros', logs.filter(l => l.accion.includes("Registro")));
                 renderLogs('log-logins', logs.filter(l => l.accion.includes("Sesión")));
-            } catch (e) {
-                console.error("Error cargando estadísticas:", e);
-            }
+            } catch (e) {}
         }
 
         function renderLogs(id, lista) {
@@ -174,7 +571,6 @@
             container.innerHTML = lista.map(l => {
                 const esPeligro = l.accion === "VACIADO TOTAL";
                 const clasePeligro = esPeligro ? "peligro" : "";
-
                 return `
                 <div class="log-row ${clasePeligro}">
                     <span class="log-time">${l.fecha.split(',')[1] || l.fecha}</span>
