@@ -777,7 +777,7 @@ body.perfil-body-moderno { margin: 0; padding: 0; background: #f0f4f8; display: 
 }
 
 /* =========================================
-   ANIMACIONES GLOBALES UNIFICADAS
+    ANIMACIONES GLOBALES UNIFICADAS
 ========================================= */
 @keyframes fadeInModal {
     from { opacity: 0; transform: translateY(-20px); }

@@ -40,9 +40,14 @@
 
         <div class="muro-wrapper">
             <div class="contenedor-perfil-top">
+                <button class="btn-perfil-top" onclick="toggleBandeja()" style="margin-right: 10px;">
+                    <img src="./icons/chat-icon.svg" alt="Mensajes" width="26" height="26">
+                </button>
+
                 <button class="btn-perfil-top" id="btn-menu-perfil">
                     <img src="./icons/user-circle.svg" alt="Perfil" width="26" height="26">
                 </button>
+                
                 <div class="dropdown-perfil" id="dropdown-perfil">
                     <button id="ver-mi-perfil">Ver Perfil</button>
                     <button id="cerrar-sesion" class="btn-logout">Cerrar Sesión</button>
@@ -176,7 +181,8 @@
             <p id="alertaMensaje">Mensaje aquí</p>
             <button id="btnCerrarAlerta">Entendido</button>
         </div>
-    </div>
+
+    </div> <!-- cierre pagina-container -->
 
     <div id="imageModal" class="image-modal">
         <span class="modal-close" id="closeModal">&times;</span>
